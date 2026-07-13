@@ -66,6 +66,12 @@ pub fn run() {
             commands::git::git_diff,
             commands::git::git_diff_staged,
             commands::git::git_current_branch,
+            commands::git::git_init,
+            commands::git::git_set_identity,
+            commands::git::git_set_remote,
+            commands::git::git_commit_all,
+            commands::git::git_pull,
+            commands::git::git_push,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

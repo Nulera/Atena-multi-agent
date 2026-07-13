@@ -10,6 +10,7 @@ import {
   Search,
   ChevronRight,
   CircleDot,
+  TriangleAlert,
 } from "lucide-react"
 import { Topbar, BottomBar } from "@/components/layout/bars"
 import {
@@ -38,6 +39,15 @@ import { listProcesses } from "@/lib/pty"
 import type { Workspace, Agent } from "@/types"
 import { getCliAppearance } from "@/features/terminal/terminal-cli"
 import atenaMark from "@/assets/atena-mark.svg"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 interface WorkspaceViewProps {
   workspace: Workspace
@@ -59,7 +69,21 @@ export function WorkspaceView({ workspace, onBack }: WorkspaceViewProps) {
   const [processCount, setProcessCount] = useState(0)
   const [gitBranch, setGitBranch] = useState("--")
   const [paletteOpen, setPaletteOpen] = useState(false)
+  const [exitDialogOpen, setExitDialogOpen] = useState(false)
   const [terminalPanes, setTerminalPanes] = useState<TerminalPaneSummary[]>([])
+
+  const requestWorkspaceExit = useCallback(() => {
+    if (terminalPanes.length === 0) {
+      onBack()
+      return
+    }
+    setExitDialogOpen(true)
+  }, [onBack, terminalPanes.length])
+
+  const confirmWorkspaceExit = useCallback(() => {
+    setExitDialogOpen(false)
+    onBack()
+  }, [onBack])
 
   const refreshAgents = useCallback(async () => {
     try {
@@ -152,10 +176,10 @@ export function WorkspaceView({ workspace, onBack }: WorkspaceViewProps) {
         id: "back",
         label: "back to workspaces",
         icon: <Folder className="h-3.5 w-3.5" />,
-        action: onBack,
+        action: requestWorkspaceExit,
       },
     ],
-    [themes, setTheme, onBack]
+    [themes, setTheme, requestWorkspaceExit]
   )
 
   return (
@@ -164,7 +188,7 @@ export function WorkspaceView({ workspace, onBack }: WorkspaceViewProps) {
         <button
           type="button"
           className="-ml-2 flex h-8 w-52 shrink-0 items-center gap-2 border-r border-[hsl(var(--border))] px-2 hover:bg-[hsl(var(--panel-elevated))]"
-          onClick={onBack}
+          onClick={requestWorkspaceExit}
           title="Back to workspaces"
         >
           <img src={atenaMark} alt="" className="h-4 w-4 rounded-[4px]" />
@@ -395,6 +419,48 @@ export function WorkspaceView({ workspace, onBack }: WorkspaceViewProps) {
         onOpenChange={setPaletteOpen}
         commands={commands}
       />
+
+      <Dialog open={exitDialogOpen} onOpenChange={setExitDialogOpen}>
+        <DialogContent className="max-w-md border-[hsl(var(--warning)/0.55)]">
+          <DialogHeader className="pr-7">
+            <div className="mb-2 flex h-9 w-9 items-center justify-center border border-[hsl(var(--warning)/0.45)] bg-[hsl(var(--warning)/0.08)] text-[hsl(var(--warning))]">
+              <TriangleAlert className="h-4 w-4" />
+            </div>
+            <DialogTitle>sair do projeto?</DialogTitle>
+            <DialogDescription className="leading-relaxed">
+              Ao voltar para a lista de projetos,{" "}
+              <strong className="font-semibold text-[hsl(var(--foreground))]">
+                {terminalPanes.length === 1
+                  ? "este terminal será fechado"
+                  : `os ${terminalPanes.length} terminais serão fechados`}
+              </strong>
+              . Processos em execução serão encerrados.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="border-l-2 border-[hsl(var(--warning))] bg-[hsl(var(--background))] px-3 py-2">
+            <p className="text-[10px] uppercase tracking-[0.12em] text-[hsl(var(--muted-foreground))]">
+              workspace
+            </p>
+            <p className="mt-0.5 truncate text-[11px] text-[hsl(var(--foreground))]">
+              {workspace.name}
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setExitDialogOpen(false)}
+            >
+              continuar no projeto
+            </Button>
+            <Button variant="danger" size="sm" onClick={confirmWorkspaceExit}>
+              fechar terminais e sair
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
