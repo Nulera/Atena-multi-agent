@@ -22,29 +22,29 @@ const statusConfig: Record<
   }
 > = {
   idle: {
-    label: "Idle",
+    label: "idle",
     variant: "muted",
-    icon: <Circle className="h-3 w-3" />,
+    icon: <Circle className="h-2.5 w-2.5" />,
   },
   running: {
-    label: "Running",
+    label: "running",
     variant: "accent",
-    icon: <Play className="h-3 w-3" />,
+    icon: <Play className="h-2.5 w-2.5" />,
   },
   paused: {
-    label: "Paused",
+    label: "paused",
     variant: "warning",
-    icon: <Pause className="h-3 w-3" />,
+    icon: <Pause className="h-2.5 w-2.5" />,
   },
   error: {
-    label: "Error",
+    label: "error",
     variant: "danger",
-    icon: <AlertCircle className="h-3 w-3" />,
+    icon: <AlertCircle className="h-2.5 w-2.5" />,
   },
   finished: {
-    label: "Finished",
+    label: "done",
     variant: "success",
-    icon: <CheckCircle2 className="h-3 w-3" />,
+    icon: <CheckCircle2 className="h-2.5 w-2.5" />,
   },
 }
 

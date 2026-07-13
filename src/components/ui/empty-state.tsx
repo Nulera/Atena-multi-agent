@@ -17,25 +17,25 @@ function EmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center gap-3 rounded-[var(--radius-md)] border border-dashed border-[hsl(var(--border-strong))] bg-[hsl(var(--panel)/0.5)] p-8 text-center",
+        "flex flex-col items-center justify-center gap-2 p-6 text-center",
         className
       )}
       {...props}
     >
       {icon && (
-        <div className="text-[hsl(var(--muted-foreground))]">{icon}</div>
+        <div className="text-[hsl(var(--muted))] opacity-50">{icon}</div>
       )}
-      <div className="space-y-1">
-        <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+      <div className="space-y-0.5">
+        <p className="text-xs font-medium text-[hsl(var(--foreground))]">
           {title}
         </p>
         {description && (
-          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+          <p className="text-[11px] text-[hsl(var(--muted))]">
             {description}
           </p>
         )}
       </div>
-      {action && <div className="mt-2">{action}</div>}
+      {action && <div className="mt-1">{action}</div>}
     </div>
   )
 }

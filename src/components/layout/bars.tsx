@@ -6,7 +6,7 @@ const Topbar = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
     <div
       ref={ref}
       className={cn(
-        "flex h-12 items-center gap-4 border-b border-[hsl(var(--border))] bg-[hsl(var(--panel))] px-4",
+        "flex h-8 items-center gap-2 border-b border-[hsl(var(--border))] bg-[hsl(var(--panel))] px-2",
         className
       )}
       {...props}
@@ -20,7 +20,7 @@ const BottomBar = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
     <div
       ref={ref}
       className={cn(
-        "flex h-7 items-center gap-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--panel))] px-4 text-xs text-[hsl(var(--muted-foreground))]",
+        "flex h-5 items-center gap-3 border-t border-[hsl(var(--border))] bg-[hsl(var(--panel))] px-2 text-[9px] text-[hsl(var(--muted-foreground))]",
         className
       )}
       {...props}

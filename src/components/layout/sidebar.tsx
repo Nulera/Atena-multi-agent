@@ -18,7 +18,7 @@ Sidebar.displayName = "Sidebar"
 function SidebarHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("flex h-12 items-center px-4", className)}
+      className={cn("flex h-9 items-center px-3", className)}
       {...props}
     />
   )
@@ -36,7 +36,7 @@ function SidebarContent({
 function SidebarFooter({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("flex items-center gap-2 p-3", className)}
+      className={cn("flex items-center gap-2 p-2", className)}
       {...props}
     />
   )
@@ -50,9 +50,9 @@ function SidebarItem({
   return (
     <button
       className={cn(
-        "flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-2 text-left text-sm transition-colors cursor-pointer",
+        "flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors cursor-pointer",
         active
-          ? "bg-[hsl(var(--accent)/0.12)] text-[hsl(var(--accent))]"
+          ? "bg-[hsl(var(--accent)/0.08)] text-[hsl(var(--accent))]"
           : "text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--panel-elevated))] hover:text-[hsl(var(--foreground))]",
         className
       )}

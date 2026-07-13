@@ -8,9 +8,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { EmptyState } from "@/components/ui/empty-state"
+import { cn } from "@/lib/utils"
 import { LogViewer } from "@/components/ui/log-viewer"
 import {
   Dialog,
@@ -27,7 +25,6 @@ import {
   listSessionLogs,
 } from "@/lib/db"
 import { useToast } from "@/components/ui/toast"
-import { cn } from "@/lib/utils"
 import type { Session, SessionLog, Agent } from "@/types"
 
 interface SessionPanelProps {
@@ -35,11 +32,11 @@ interface SessionPanelProps {
   agents: Agent[]
 }
 
-const statusConfig: Record<string, { label: string; variant: "accent" | "success" | "danger" | "muted" | "warning" }> = {
-  active: { label: "Active", variant: "accent" },
-  finished: { label: "Finished", variant: "success" },
-  stopped: { label: "Stopped", variant: "warning" },
-  error: { label: "Error", variant: "danger" },
+const statusStyles: Record<string, string> = {
+  active: "text-[hsl(var(--accent))]",
+  finished: "text-[hsl(var(--success))]",
+  stopped: "text-[hsl(var(--warning))]",
+  error: "text-[hsl(var(--danger))]",
 }
 
 export function SessionPanel({ workspaceId, agents }: SessionPanelProps) {
@@ -90,10 +87,10 @@ export function SessionPanel({ workspaceId, agents }: SessionPanelProps) {
     if (!renameDialog || !renameValue.trim()) return
     try {
       await updateSession(renameDialog.id, { name: renameValue.trim() })
-      toast({ title: "Sessão renomeada", variant: "success" })
+      toast({ title: "session renamed", variant: "success" })
       await refresh()
     } catch (err) {
-      toast({ title: "Erro", description: String(err), variant: "danger" })
+      toast({ title: "error", description: String(err), variant: "danger" })
     } finally {
       setRenameDialog(null)
     }
@@ -103,14 +100,14 @@ export function SessionPanel({ workspaceId, agents }: SessionPanelProps) {
     if (!deleteDialog) return
     try {
       await deleteSession(deleteDialog.id)
-      toast({ title: "Sessão excluída", variant: "default" })
+      toast({ title: "session deleted", variant: "default" })
       if (selectedSession?.id === deleteDialog.id) {
         setSelectedSession(null)
         setLogs([])
       }
       await refresh()
     } catch (err) {
-      toast({ title: "Erro", description: String(err), variant: "danger" })
+      toast({ title: "error", description: String(err), variant: "danger" })
     } finally {
       setDeleteDialog(null)
     }
@@ -132,95 +129,90 @@ export function SessionPanel({ workspaceId, agents }: SessionPanelProps) {
 
   return (
     <div className="flex h-full">
-      <div className="flex w-72 flex-col border-r border-[hsl(var(--border))]">
-        <div className="flex items-center gap-2 p-3 border-b border-[hsl(var(--border))]">
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[hsl(var(--muted-foreground))]" />
+      <div className="flex w-64 flex-col border-r border-[hsl(var(--border))]">
+        <div className="flex items-center gap-2 border-b border-[hsl(var(--border))] px-2.5 py-1.5">
+          <span className="text-[11px] font-medium text-[hsl(var(--muted-foreground))]">
+            sessions
+          </span>
+          <span className="text-[10px] text-[hsl(var(--muted))]">({filtered.length})</span>
+          <div className="ml-auto relative">
+            <Search className="absolute left-1.5 top-1/2 h-2.5 w-2.5 -translate-y-1/2 text-[hsl(var(--muted))]" />
             <Input
-              placeholder="Buscar sessão..."
+              placeholder="filter..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-8 pl-8 text-xs"
+              className="h-5 w-24 pl-6 text-[10px]"
             />
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <p className="p-4 text-sm text-[hsl(var(--muted-foreground))]">
-              Carregando...
-            </p>
+            <p className="p-2.5 text-[11px] text-[hsl(var(--muted))]">loading...</p>
           ) : filtered.length === 0 ? (
-            <div className="p-4">
-              <EmptyState
-                icon={<History className="h-6 w-6" />}
-                title="Sem sessões"
-                description="As sessões são criadas ao executar agentes"
-                className="p-4"
-              />
+            <div className="flex flex-col items-center gap-1.5 p-4 text-center">
+              <History className="h-5 w-5 text-[hsl(var(--muted))] opacity-40" />
+              <p className="text-[11px]">no sessions</p>
+              <p className="text-[10px] text-[hsl(var(--muted))]">
+                sessions are created when agents run
+              </p>
             </div>
           ) : (
-            <div className="space-y-1 p-2">
+            <div className="space-y-0.5 p-1">
               {filtered.map((session) => {
                 const agent = agentMap.get(session.agentId)
-                const status = statusConfig[session.status] ?? {
-                  label: session.status,
-                  variant: "muted" as const,
-                }
                 return (
-                  <Card
+                  <div
                     key={session.id}
                     className={cn(
-                      "group cursor-pointer p-3 transition-colors",
+                      "group flex cursor-pointer flex-col gap-0.5 px-2 py-1.5 transition-colors",
                       selectedSession?.id === session.id
-                        ? "border-[hsl(var(--accent)/0.5)] bg-[hsl(var(--accent)/0.05)]"
-                        : "hover:border-[hsl(var(--border-strong))]"
+                        ? "bg-[hsl(var(--accent)/0.08)]"
+                        : "hover:bg-[hsl(var(--panel-elevated))]"
                     )}
                     onClick={() => handleSelect(session)}
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs font-medium">
-                          {session.name || `Sessão ${session.id.slice(0, 8)}`}
-                        </p>
-                        <p className="mt-0.5 truncate text-xs text-[hsl(var(--muted-foreground))]">
-                          {agent?.name ?? "Agente desconhecido"}
-                        </p>
-                      </div>
-                      <Badge variant={status.variant} className="ml-1 shrink-0 text-[10px]">
-                        {status.label}
-                      </Badge>
+                    <div className="flex items-center gap-1.5">
+                      <span className="truncate text-[11px] font-medium">
+                        {session.name || `session-${session.id.slice(0, 6)}`}
+                      </span>
+                      <span className={cn("ml-auto text-[9px] uppercase", statusStyles[session.status] ?? "text-[hsl(var(--muted))]")}>
+                        {session.status}
+                      </span>
                     </div>
-                    <div className="mt-1.5 flex items-center justify-between">
-                      <span className="flex items-center gap-1 text-[10px] text-[hsl(var(--muted-foreground))]">
-                        <Clock className="h-2.5 w-2.5" />
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-[hsl(var(--muted))]">
+                        {agent?.name ?? "unknown"}
+                      </span>
+                      <span className="flex items-center gap-0.5 text-[9px] text-[hsl(var(--muted))]">
+                        <Clock className="h-2 w-2" />
                         {new Date(session.startedAt).toLocaleDateString()}
                       </span>
-                      <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                        <button
-                          className="cursor-pointer p-0.5 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setRenameDialog(session)
-                            setRenameValue(session.name)
-                          }}
-                          title="Renomear"
-                        >
-                          <Pencil className="h-3 w-3" />
-                        </button>
-                        <button
-                          className="cursor-pointer p-0.5 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--danger))]"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setDeleteDialog(session)
-                          }}
-                          title="Excluir"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </div>
                     </div>
-                  </Card>
+                    <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                      <button
+                        className="cursor-pointer p-0 text-[hsl(var(--muted))] hover:text-[hsl(var(--foreground))]"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setRenameDialog(session)
+                          setRenameValue(session.name)
+                        }}
+                        title="rename"
+                      >
+                        <Pencil className="h-2.5 w-2.5" />
+                      </button>
+                      <button
+                        className="cursor-pointer p-0 text-[hsl(var(--muted))] hover:text-[hsl(var(--danger))]"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setDeleteDialog(session)
+                        }}
+                        title="delete"
+                      >
+                        <Trash2 className="h-2.5 w-2.5" />
+                      </button>
+                    </div>
+                  </div>
                 )
               })}
             </div>
@@ -231,43 +223,35 @@ export function SessionPanel({ workspaceId, agents }: SessionPanelProps) {
       <div className="flex flex-1 flex-col overflow-hidden">
         {selectedSession ? (
           <>
-            <div className="flex items-center gap-3 border-b border-[hsl(var(--border))] p-3">
-              <div>
-                <p className="text-sm font-medium">
-                  {selectedSession.name || `Sessão ${selectedSession.id.slice(0, 8)}`}
-                </p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                  Iniciada: {new Date(selectedSession.startedAt).toLocaleString()}
-                  {selectedSession.endedAt && (
-                    <> | Encerrada: {new Date(selectedSession.endedAt).toLocaleString()}</>
-                  )}
-                </p>
-              </div>
-              <div className="ml-auto flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const text = logs.map((l) => `[${l.type}] ${l.content}`).join("\n")
-                    navigator.clipboard.writeText(text)
-                    toast({ title: "Logs copiados", variant: "success" })
-                  }}
-                >
-                  Copiar Logs
-                </Button>
-              </div>
+            <div className="flex items-center gap-2 border-b border-[hsl(var(--border))] px-2.5 py-1.5">
+              <span className="text-[11px] font-medium">
+                {selectedSession.name || `session-${selectedSession.id.slice(0, 6)}`}
+              </span>
+              <span className="text-[10px] text-[hsl(var(--muted))]">
+                {new Date(selectedSession.startedAt).toLocaleString()}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="ml-auto h-6 text-[10px]"
+                onClick={() => {
+                  const text = logs.map((l) => `[${l.type}] ${l.content}`).join("\n")
+                  navigator.clipboard.writeText(text)
+                  toast({ title: "logs copied", variant: "success" })
+                }}
+              >
+                copy
+              </Button>
             </div>
-            <div className="flex-1 overflow-hidden p-3">
+            <div className="flex-1 overflow-hidden p-1.5">
               <LogViewer logs={logs.map(formatLog)} className="h-full" />
             </div>
           </>
         ) : (
-          <div className="flex h-full items-center justify-center">
-            <EmptyState
-              icon={<History className="h-8 w-8" />}
-              title="Selecione uma sessão"
-              description="Escolha uma sessão à esquerda para ver os logs"
-            />
+          <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+            <History className="h-6 w-6 text-[hsl(var(--muted))] opacity-40" />
+            <p className="text-xs">select a session</p>
+            <p className="text-[10px] text-[hsl(var(--muted))]">choose one from the left to view logs</p>
           </div>
         )}
       </div>
@@ -275,21 +259,17 @@ export function SessionPanel({ workspaceId, agents }: SessionPanelProps) {
       <Dialog open={!!renameDialog} onOpenChange={(o) => !o && setRenameDialog(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Renomear sessão</DialogTitle>
-            <DialogDescription>Dê um nome para esta sessão</DialogDescription>
+            <DialogTitle>rename session</DialogTitle>
+            <DialogDescription>give this session a name</DialogDescription>
           </DialogHeader>
           <Input
             value={renameValue}
             onChange={(e) => setRenameValue(e.target.value)}
-            placeholder="Nome da sessão"
+            placeholder="session name"
           />
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setRenameDialog(null)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleRename} disabled={!renameValue.trim()}>
-              Salvar
-            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setRenameDialog(null)}>cancel</Button>
+            <Button variant="default" size="sm" onClick={handleRename} disabled={!renameValue.trim}>save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -297,18 +277,12 @@ export function SessionPanel({ workspaceId, agents }: SessionPanelProps) {
       <Dialog open={!!deleteDialog} onOpenChange={(o) => !o && setDeleteDialog(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Excluir sessão?</DialogTitle>
-            <DialogDescription>
-              Os logs desta sessão serão permanentemente removidos.
-            </DialogDescription>
+            <DialogTitle>delete session?</DialogTitle>
+            <DialogDescription>logs will be permanently removed.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setDeleteDialog(null)}>
-              Cancelar
-            </Button>
-            <Button variant="danger" onClick={handleDelete}>
-              Excluir
-            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setDeleteDialog(null)}>cancel</Button>
+            <Button variant="danger" size="sm" onClick={handleDelete}>delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

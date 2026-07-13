@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from "react"
-import { Search, CornerDownLeft } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export interface CommandItem {
@@ -35,7 +34,7 @@ export function CommandPalette({
     if (open) {
       setSearch("")
       setActiveIndex(0)
-      setTimeout(() => inputRef.current?.focus(), 50)
+      setTimeout(() => inputRef.current?.focus(), 30)
     }
   }, [open])
 
@@ -86,68 +85,55 @@ export function CommandPalette({
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-start justify-center pt-[20vh]"
+      className="fixed inset-0 z-[200] flex items-start justify-center pt-[15vh]"
       onClick={() => onOpenChange(false)}
     >
+      <div className="absolute inset-0 bg-black/70" />
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={() => onOpenChange(false)}
-      />
-      <div
-        className="relative w-full max-w-xl rounded-[var(--radius-md)] border border-[hsl(var(--border))] bg-[hsl(var(--panel))] shadow-2xl"
+        className="relative w-full max-w-md rounded-[var(--radius-sm)] border border-[hsl(var(--border-strong))] bg-[hsl(var(--panel))] shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-2 border-b border-[hsl(var(--border))] p-3">
-          <Search className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />
+        <div className="flex items-center gap-2 border-b border-[hsl(var(--border))] px-3 py-2">
+          <span className="text-[hsl(var(--accent))] text-xs">$</span>
           <input
             ref={inputRef}
             type="text"
-            placeholder="Digite um comando..."
+            placeholder="type a command..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 bg-transparent text-sm text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))]"
+            className="flex-1 bg-transparent text-xs text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted))]"
           />
-          <kbd className="rounded border border-[hsl(var(--border))] px-1.5 py-0.5 text-[10px] text-[hsl(var(--muted-foreground))]">
-            ESC
-          </kbd>
+          <kbd className="text-[9px] text-[hsl(var(--muted))]">ESC</kbd>
         </div>
 
-        <div ref={listRef} className="max-h-[300px] overflow-y-auto p-2">
+        <div ref={listRef} className="max-h-[260px] overflow-y-auto p-1">
           {filtered.length === 0 ? (
-            <p className="p-4 text-center text-sm text-[hsl(var(--muted-foreground))]">
-              Nenhum comando encontrado
+            <p className="p-3 text-center text-[11px] text-[hsl(var(--muted))]">
+              no results
             </p>
           ) : (
             filtered.map((cmd, i) => (
               <button
                 key={cmd.id}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-[var(--radius-sm)] px-3 py-2 text-left transition-colors cursor-pointer",
+                  "flex w-full items-center gap-2 px-2.5 py-1.5 text-left transition-colors cursor-pointer",
                   i === activeIndex
-                    ? "bg-[hsl(var(--accent)/0.12)] text-[hsl(var(--foreground))]"
+                    ? "bg-[hsl(var(--accent)/0.1)] text-[hsl(var(--foreground))]"
                     : "text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--panel-elevated))]"
                 )}
                 onClick={() => executeCommand(cmd)}
                 onMouseEnter={() => setActiveIndex(i)}
               >
                 {cmd.icon && (
-                  <span className="shrink-0">{cmd.icon}</span>
+                  <span className="shrink-0 opacity-70">{cmd.icon}</span>
                 )}
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium">{cmd.label}</p>
-                  {cmd.description && (
-                    <p className="truncate text-xs text-[hsl(var(--muted-foreground))]">
-                      {cmd.description}
-                    </p>
-                  )}
-                </div>
+                <span className="min-w-0 flex-1 truncate text-xs">
+                  {cmd.label}
+                </span>
                 {cmd.shortcut && (
-                  <kbd className="shrink-0 rounded border border-[hsl(var(--border))] px-1.5 py-0.5 text-[10px] text-[hsl(var(--muted-foreground))]">
+                  <kbd className="shrink-0 text-[9px] text-[hsl(var(--muted))]">
                     {cmd.shortcut}
                   </kbd>
-                )}
-                {i === activeIndex && (
-                  <CornerDownLeft className="h-3.5 w-3.5 shrink-0 text-[hsl(var(--muted-foreground))]" />
                 )}
               </button>
             ))

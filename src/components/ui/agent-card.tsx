@@ -1,8 +1,7 @@
 import { cn } from "@/lib/utils"
 import { Card } from "@/components/ui/card"
 import { StatusBadge } from "@/components/ui/status-badge"
-import { Badge } from "@/components/ui/badge"
-import { Bot, MoreVertical } from "lucide-react"
+import { Bot } from "lucide-react"
 import type { Agent } from "@/types"
 
 interface AgentCardProps {
@@ -12,58 +11,50 @@ interface AgentCardProps {
 }
 
 const roleLabels: Record<string, string> = {
-  frontend: "Frontend",
-  backend: "Backend",
-  "ui-ux": "UI/UX",
-  qa: "QA",
-  copywriter: "Copywriter",
-  devops: "DevOps",
-  "git-reviewer": "Git Reviewer",
-  "project-manager": "Project Manager",
-  orchestrator: "Orchestrator",
-  custom: "Custom",
+  frontend: "frontend",
+  backend: "backend",
+  "ui-ux": "ui/ux",
+  qa: "qa",
+  copywriter: "copy",
+  devops: "devops",
+  "git-reviewer": "git-review",
+  "project-manager": "pm",
+  orchestrator: "orchestrator",
+  custom: "custom",
 }
 
 export function AgentCard({ agent, onClick, className }: AgentCardProps) {
   return (
     <Card
       className={cn(
-        "group cursor-pointer p-4 transition-colors hover:border-[hsl(var(--accent)/0.5)]",
+        "group cursor-pointer p-2.5 transition-colors hover:border-[hsl(var(--accent)/0.4)]",
         className
       )}
       onClick={onClick}
     >
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-sm)] bg-[hsl(var(--panel-elevated))]">
-            <Bot className="h-5 w-5 text-[hsl(var(--accent))]" />
-          </div>
-          <div>
-            <p className="text-sm font-medium">{agent.name}</p>
-            <Badge variant="muted" className="mt-0.5">
+      <div className="flex items-start gap-2">
+        <Bot className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[hsl(var(--muted-foreground))]" />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="truncate text-xs font-medium">{agent.name}</p>
+            <span className="text-[10px] text-[hsl(var(--muted))]">
               {roleLabels[agent.role] ?? agent.role}
-            </Badge>
+            </span>
+          </div>
+          {agent.description && (
+            <p className="mt-0.5 truncate text-[11px] text-[hsl(var(--muted))]">
+              {agent.description}
+            </p>
+          )}
+          <div className="mt-2 flex items-center justify-between">
+            <StatusBadge status={agent.status} />
+            {agent.command && (
+              <code className="text-[10px] text-[hsl(var(--muted))]">
+                ${agent.command}
+              </code>
+            )}
           </div>
         </div>
-        <button
-          className="text-[hsl(var(--muted-foreground))] opacity-0 transition-opacity group-hover:opacity-100 cursor-pointer"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <MoreVertical className="h-4 w-4" />
-        </button>
-      </div>
-      {agent.description && (
-        <p className="mt-2 text-xs text-[hsl(var(--muted-foreground))]">
-          {agent.description}
-        </p>
-      )}
-      <div className="mt-3 flex items-center justify-between">
-        <StatusBadge status={agent.status} />
-        {agent.command && (
-          <code className="rounded-[var(--radius-sm)] bg-[hsl(var(--panel-elevated))] px-2 py-0.5 text-xs font-mono text-[hsl(var(--muted-foreground))]">
-            {agent.command}
-          </code>
-        )}
       </div>
     </Card>
   )

@@ -1,7 +1,6 @@
 import { useState, useCallback } from "react"
 import { Terminal as TerminalIcon, Plus, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { EmptyState } from "@/components/ui/empty-state"
 import { TerminalView } from "./terminal-view"
 import type { Agent } from "@/types"
 
@@ -40,42 +39,42 @@ export function TerminalPanel({ workspaceId, workspacePath, agents }: TerminalPa
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-1 border-b border-[hsl(var(--border))] px-2 py-1">
+      <div className="flex items-center gap-0.5 border-b border-[hsl(var(--border))] px-1.5 py-1">
         {tabs.map((tab) => (
           <div
             key={tab.id}
-            className={`group flex items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1 text-xs cursor-pointer transition-colors ${
+            className={`group flex items-center gap-1.5 px-2 py-1 text-[11px] cursor-pointer transition-colors ${
               activeTab === tab.id
                 ? "bg-[hsl(var(--panel-elevated))] text-[hsl(var(--foreground))]"
-                : "text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--panel-elevated))]"
+                : "text-[hsl(var(--muted))] hover:text-[hsl(var(--muted-foreground))]"
             }`}
             onClick={() => setActiveTab(tab.id)}
           >
-            <TerminalIcon className="h-3 w-3" />
+            <TerminalIcon className="h-2.5 w-2.5" />
             {tab.agent.name}
             <button
-              className="ml-1 opacity-0 transition-opacity group-hover:opacity-100 cursor-pointer"
+              className="opacity-0 transition-opacity group-hover:opacity-100 cursor-pointer"
               onClick={(e) => {
                 e.stopPropagation()
                 closeTab(tab.id)
               }}
             >
-              <X className="h-3 w-3" />
+              <X className="h-2.5 w-2.5" />
             </button>
           </div>
         ))}
         {agents.length > 0 && (
-          <div className="ml-auto flex items-center gap-1">
+          <div className="ml-auto flex items-center gap-0.5">
             {agents.slice(0, 5).map((agent) => (
               <Button
                 key={agent.id}
                 variant="ghost"
                 size="sm"
-                className="h-7 text-xs"
+                className="h-6 text-[10px]"
                 onClick={() => openTerminal(agent)}
-                title={`Abrir terminal para ${agent.name}`}
+                title={`open terminal: ${agent.name}`}
               >
-                <Plus className="h-3 w-3" />
+                <Plus className="h-2.5 w-2.5" />
                 {agent.name}
               </Button>
             ))}
@@ -83,7 +82,7 @@ export function TerminalPanel({ workspaceId, workspacePath, agents }: TerminalPa
         )}
       </div>
 
-      <div className="flex-1 overflow-hidden p-2">
+      <div className="flex-1 overflow-hidden p-1.5">
         {activeTabData ? (
           <TerminalView
             agentId={activeTabData.agent.id}
@@ -93,11 +92,15 @@ export function TerminalPanel({ workspaceId, workspacePath, agents }: TerminalPa
             workspaceId={workspaceId}
           />
         ) : (
-          <EmptyState
-            icon={<TerminalIcon className="h-8 w-8" />}
-            title="Nenhum terminal aberto"
-            description="Selecione um agente acima para abrir um terminal"
-          />
+          <div className="flex flex-col items-center justify-center gap-2 p-8 text-center">
+            <TerminalIcon className="h-6 w-6 text-[hsl(var(--muted))] opacity-40" />
+            <div>
+              <p className="text-xs">no terminal open</p>
+              <p className="mt-0.5 text-[10px] text-[hsl(var(--muted))]">
+                select an agent above to start
+              </p>
+            </div>
+          </div>
         )}
       </div>
     </div>

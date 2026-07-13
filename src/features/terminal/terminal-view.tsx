@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react"
+import { useEffect, useRef, useCallback, useState, type ReactNode } from "react"
 import { Terminal } from "@xterm/xterm"
 import { FitAddon } from "@xterm/addon-fit"
 import { WebLinksAddon } from "@xterm/addon-web-links"
@@ -6,20 +6,22 @@ import "@xterm/xterm/css/xterm.css"
 import {
   spawnProcess,
   writeToProcess,
+  resizeProcess,
   killProcess,
+  attachProcess,
   onProcessOutput,
   onProcessExit,
 } from "@/lib/pty"
 import { createSession, updateSession, addSessionLog } from "@/lib/db"
 import { useTheme } from "@/lib/theme"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import {
-  Play,
   Square,
   Trash2,
   Copy,
+  RotateCw,
   Terminal as TerminalIcon,
+  X,
 } from "lucide-react"
 
 interface TerminalViewProps {
@@ -28,7 +30,32 @@ interface TerminalViewProps {
   command?: string
   workingDir: string
   workspaceId?: string
-  onLog?: (type: string, content: string) => void
+  onClose?: () => void
+  onActivityChange?: (activity: TerminalActivity) => void
+  accentColor?: string
+  cliIcon?: ReactNode
+}
+
+export type TerminalStatus = "open" | "idle" | "running" | "stopped"
+
+export interface TerminalActivity {
+  status: TerminalStatus
+  cli: string
+}
+
+function commandCli(commandLine: string) {
+  const command = commandLine.trim().replace(/^[&.]\s+/, "")
+  const knownCli = command.match(/(?:^|[^a-z0-9-])(claude(?:-code)?|claudecode|codex(?:-cli)?|openai-codex|opencode)(?=\s|$)/i)?.[1]
+  if (knownCli) {
+    const normalized = knownCli.toLowerCase()
+    if (normalized.startsWith("claude")) return "claude"
+    if (normalized.includes("codex")) return "codex"
+    return "opencode"
+  }
+  const firstToken = command.match(/^(?:"([^"]+)"|'([^']+)'|(\S+))/)
+  const executable = firstToken?.[1] || firstToken?.[2] || firstToken?.[3]
+  if (!executable) return "PowerShell"
+  return executable.split(/[\\/]/).pop()?.replace(/\.(exe|cmd|bat|ps1)$/i, "") || "PowerShell"
 }
 
 export function TerminalView({
@@ -37,30 +64,60 @@ export function TerminalView({
   command,
   workingDir,
   workspaceId,
-  onLog,
+  onClose,
+  onActivityChange,
+  accentColor = "#8B949E",
+  cliIcon,
 }: TerminalViewProps) {
   const termRef = useRef<HTMLDivElement>(null)
   const termInstanceRef = useRef<Terminal | null>(null)
   const fitRef = useRef<FitAddon | null>(null)
   const processIdRef = useRef<string | null>(null)
+  const sessionIdRef = useRef<string | null>(null)
+  const unlistenRef = useRef<Array<() => void>>([])
+  const dataDisposableRef = useRef<{ dispose: () => void } | null>(null)
+  const disposedRef = useRef(false)
+  const inputBufferRef = useRef("")
+  const pendingInputRef = useRef("")
+  const outputTailRef = useRef("")
+  const currentCliRef = useRef("PowerShell")
+  const currentStatusRef = useRef<TerminalStatus>("open")
+  const inputEscapeStateRef = useRef<"none" | "escape" | "csi" | "osc">("none")
+  const [isRunning, setIsRunning] = useState(false)
   const { theme } = useTheme()
 
+  const focusTerminal = useCallback(() => {
+    requestAnimationFrame(() => {
+      if (!disposedRef.current) {
+        termInstanceRef.current?.focus()
+      }
+    })
+  }, [])
+
+  const reportActivity = useCallback(
+    (status: TerminalStatus, cli = currentCliRef.current) => {
+      currentStatusRef.current = status
+      currentCliRef.current = cli
+      onActivityChange?.({ status, cli })
+    },
+    [onActivityChange]
+  )
+
   const getTerminalTheme = useCallback(() => {
-    const isDark = theme.isDark
-    if (isDark) {
+    if (theme.isDark) {
       return {
-        background: "#0d1117",
-        foreground: "#c9d1d9",
-        cursor: "#58a6ff",
+        background: "#0a0a0a",
+        foreground: "#e0e0e0",
+        cursor: "#39c5cf",
         selectionBackground: "#264f78",
-        black: "#0d1117",
+        black: "#0a0a0a",
         red: "#f85149",
-        green: "#3fb950",
+        green: "#39c5cf",
         yellow: "#d29922",
         blue: "#58a6ff",
         magenta: "#bc8cff",
         cyan: "#39c5cf",
-        white: "#c9d1d9",
+        white: "#e0e0e0",
         brightBlack: "#6e7681",
         brightRed: "#ff7b72",
         brightGreen: "#56d364",
@@ -95,15 +152,136 @@ export function TerminalView({
     }
   }, [theme])
 
-  const initTerminal = useCallback(() => {
+  const startShell = useCallback(async () => {
+    if (processIdRef.current) return
+    const term = termInstanceRef.current
+    if (!term || disposedRef.current) return
+
+    // Create session for logging
+    if (workspaceId && agentId) {
+      try {
+        const session = await createSession(
+          workspaceId,
+          agentId,
+          `${agentName} — ${new Date().toLocaleString()}`
+        )
+        sessionIdRef.current = session.id
+      } catch (err) {
+        console.error("Failed to create session:", err)
+      }
+    }
+
+    try {
+      reportActivity(command?.trim() ? "running" : "open", command?.trim() ? commandCli(command) : "PowerShell")
+      // Always spawn an interactive shell; if command is set, it gets sent to the shell
+      const info = await spawnProcess(command || "", workingDir, agentId)
+      if (disposedRef.current || termInstanceRef.current !== term) {
+        killProcess(info.id).catch(() => {})
+        return
+      }
+      processIdRef.current = info.id
+      setIsRunning(true)
+      focusTerminal()
+      resizeProcess(info.id, term.rows, term.cols).catch(() => {})
+
+      if (pendingInputRef.current) {
+        const pendingInput = pendingInputRef.current
+        pendingInputRef.current = ""
+        writeToProcess(info.id, pendingInput).catch((err) => {
+          console.error("Failed to flush pending PTY input:", err)
+        })
+      }
+
+      if (sessionIdRef.current) {
+        addSessionLog(
+          sessionIdRef.current,
+          "info",
+          command ? `$ ${command}` : "$ shell"
+        ).catch(() => {})
+      }
+
+      const unlistenOutput = await onProcessOutput(info.id, (data) => {
+        if (disposedRef.current) return
+        term.write(data)
+        const plainOutput = data.replace(/\x1b\[[0-?]*[ -\/]*[@-~]/g, "")
+        outputTailRef.current = `${outputTailRef.current}${plainOutput}`.slice(-500)
+        const hasKnownInteractiveCli = /^(claude|codex|opencode)$/i.test(currentCliRef.current)
+        if (!hasKnownInteractiveCli) {
+          if (/claude\s+code/i.test(outputTailRef.current)) {
+            reportActivity("running", "claude")
+          } else if (/(?:openai\s+codex|codex\s+cli)/i.test(outputTailRef.current)) {
+            reportActivity("running", "codex")
+          } else if (/\bopencode\b/i.test(outputTailRef.current)) {
+            reportActivity("running", "opencode")
+          }
+        }
+        if (/(?:^|[\r\n])PS [^\r\n>]*>\s*$/.test(outputTailRef.current)) {
+          inputBufferRef.current = ""
+          reportActivity("idle", "PowerShell")
+        }
+        if (sessionIdRef.current) {
+          addSessionLog(sessionIdRef.current, "output", data).catch(() => {})
+        }
+      })
+
+      const unlistenExit = await onProcessExit(info.id, () => {
+        if (disposedRef.current) return
+        term.write("\r\n\x1b[31m[exit]\x1b[0m\r\n")
+        processIdRef.current = null
+        setIsRunning(false)
+        reportActivity("stopped")
+        if (sessionIdRef.current) {
+          updateSession(sessionIdRef.current, { status: "finished" }).catch(() => {})
+        }
+      })
+
+      unlistenRef.current = [unlistenOutput, unlistenExit]
+
+      const attached = await attachProcess(info.id)
+      if (disposedRef.current || termInstanceRef.current !== term) return
+      if (attached.scrollback) {
+        term.write(attached.scrollback)
+        const plainScrollback = attached.scrollback.replace(
+          /\x1b\[[0-?]*[ -\/]*[@-~]/g,
+          ""
+        )
+        outputTailRef.current = plainScrollback.slice(-500)
+        if (/claude\s+code/i.test(outputTailRef.current)) {
+          reportActivity("running", "claude")
+        } else if (/(?:openai\s+codex|codex\s+cli)/i.test(outputTailRef.current)) {
+          reportActivity("running", "codex")
+        } else if (/\bopencode\b/i.test(outputTailRef.current)) {
+          reportActivity("running", "opencode")
+        }
+        if (/(?:^|[\r\n])PS [^\r\n>]*>\s*$/.test(outputTailRef.current)) {
+          reportActivity("idle", "PowerShell")
+        }
+      }
+    } catch (err) {
+      if (!disposedRef.current) {
+        term.write(`\x1b[31merr: ${err}\x1b[0m\r\n`)
+        reportActivity("stopped")
+      }
+      if (sessionIdRef.current) {
+        addSessionLog(sessionIdRef.current, "error", String(err)).catch(() => {})
+        updateSession(sessionIdRef.current, { status: "error" }).catch(() => {})
+      }
+    }
+  }, [command, workingDir, agentId, workspaceId, agentName, focusTerminal, reportActivity])
+
+  // Initialize terminal + auto-start shell
+  useEffect(() => {
     if (!termRef.current || termInstanceRef.current) return
+    disposedRef.current = false
 
     const term = new Terminal({
       fontSize: 13,
-      fontFamily: "'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace",
+      fontFamily:
+        "'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace",
       cursorBlink: true,
       theme: getTerminalTheme() as any,
       allowProposedApi: true,
+      convertEol: false,
     })
 
     const fit = new FitAddon()
@@ -116,91 +294,145 @@ export function TerminalView({
     termInstanceRef.current = term
     fitRef.current = fit
 
-    term.onData((data) => {
+    // Write header
+    term.write(`\x1b[36m${agentName}\x1b[0m`)
+    if (command) {
+      term.write(` \x1b[90m$ ${command}\x1b[0m`)
+    }
+    term.write("\r\n\r\n")
+
+    // Pipe user input to process
+    dataDisposableRef.current = term.onData((data) => {
+      if (currentStatusRef.current !== "running") {
+        for (const character of data) {
+          if (inputEscapeStateRef.current === "csi") {
+            if (character >= "@" && character <= "~") {
+              inputEscapeStateRef.current = "none"
+            }
+            continue
+          }
+          if (inputEscapeStateRef.current === "osc") {
+            if (character === "\u0007") inputEscapeStateRef.current = "none"
+            continue
+          }
+          if (inputEscapeStateRef.current === "escape") {
+            inputEscapeStateRef.current =
+              character === "[" ? "csi" : character === "]" ? "osc" : "none"
+            continue
+          }
+          if (character === "\u001b") {
+            inputEscapeStateRef.current = "escape"
+            continue
+          }
+          if (character === "\r" || character === "\n") {
+            const commandLine = inputBufferRef.current.trim()
+            if (commandLine) reportActivity("running", commandCli(commandLine))
+            inputBufferRef.current = ""
+          } else if (character === "\u0003") {
+            inputBufferRef.current = ""
+          } else if (character === "\u007f") {
+            inputBufferRef.current = inputBufferRef.current.slice(0, -1)
+          } else if (character >= " " && character !== "\u001b") {
+            inputBufferRef.current += character
+          }
+        }
+      }
+
       if (processIdRef.current) {
-        writeToProcess(processIdRef.current, data)
-        onLog?.("command", data)
+        writeToProcess(processIdRef.current, data).catch((err) => {
+          console.error("Failed to write to PTY:", err)
+        })
+        if (sessionIdRef.current) {
+          addSessionLog(sessionIdRef.current, "command", data).catch(() => {})
+        }
+      } else {
+        pendingInputRef.current = `${pendingInputRef.current}${data}`.slice(-8192)
       }
     })
 
-    term.write(`\x1b[36m${agentName}\x1b[0m\r\n`)
-    term.write(`\x1b[90mDir: ${workingDir}\x1b[0m\r\n`)
-    if (command) {
-      term.write(`\x1b[90mCmd: ${command}\x1b[0m\r\n`)
-    }
-    term.write("\r\n")
-  }, [agentName, workingDir, command, getTerminalTheme, onLog])
-
-  const startProcess = useCallback(async () => {
-    if (!command || processIdRef.current) return
-
-    const term = termInstanceRef.current
-    if (!term) return
-
-    term.write(`\x1b[33mIniciando: ${command}\x1b[0m\r\n\r\n`)
-
-    let sessionId: string | null = null
-    if (workspaceId && agentId) {
-      try {
-        const session = await createSession(
-          workspaceId,
-          agentId,
-          `${agentName} — ${new Date().toLocaleString()}`
-        )
-        sessionId = session.id
-        await addSessionLog(sessionId, "info", `Command: ${command}`)
-      } catch (err) {
-        console.error("Failed to create session:", err)
+    term.onResize(({ rows, cols }) => {
+      if (processIdRef.current) {
+        resizeProcess(processIdRef.current, rows, cols).catch(() => {})
       }
-    }
+    })
 
-    try {
-      const info = await spawnProcess(command, workingDir, agentId)
-      processIdRef.current = info.id
+    // Deferring one task prevents React StrictMode's probe mount from spawning a duplicate PTY.
+    const startTimer = window.setTimeout(() => startShell(), 0)
+    focusTerminal()
 
-      const unlistenOutput = await onProcessOutput(info.id, (data) => {
-        term.write(data)
-        onLog?.("output", data)
-        if (sessionId) {
-          addSessionLog(sessionId, "output", data).catch(() => {})
-        }
-      })
-
-      const unlistenExit = await onProcessExit(info.id, () => {
-        term.write(`\r\n\x1b[31m[Processo encerrado]\x1b[0m\r\n`)
+    return () => {
+      window.clearTimeout(startTimer)
+      disposedRef.current = true
+      pendingInputRef.current = ""
+      dataDisposableRef.current?.dispose()
+      dataDisposableRef.current = null
+      unlistenRef.current.forEach((fn) => fn())
+      unlistenRef.current = []
+      if (processIdRef.current) {
+        killProcess(processIdRef.current).catch(() => {})
         processIdRef.current = null
-        unlistenOutput()
-        unlistenExit()
-        if (sessionId) {
-          updateSession(sessionId, { status: "finished" }).catch(() => {})
-          addSessionLog(sessionId, "info", "Process finished").catch(() => {})
-        }
-      })
-    } catch (err) {
-      term.write(`\x1b[31mErro: ${err}\x1b[0m\r\n`)
-      onLog?.("error", String(err))
-      if (sessionId) {
-        addSessionLog(sessionId, "error", String(err)).catch(() => {})
-        updateSession(sessionId, { status: "error" }).catch(() => {})
+      }
+      try {
+        term.dispose()
+      } catch {}
+      termInstanceRef.current = null
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Update theme when it changes
+  useEffect(() => {
+    if (termInstanceRef.current) {
+      termInstanceRef.current.options.theme = getTerminalTheme() as any
+    }
+  }, [theme, getTerminalTheme])
+
+  // Resize handler
+  useEffect(() => {
+    const handleResize = () => {
+      fitRef.current?.fit()
+      const terminal = termInstanceRef.current
+      if (terminal && processIdRef.current) {
+        resizeProcess(
+          processIdRef.current,
+          terminal.rows,
+          terminal.cols
+        ).catch(() => {})
       }
     }
-  }, [command, workingDir, agentId, workspaceId, agentName, onLog])
+    const observer = new ResizeObserver(handleResize)
+    if (termRef.current) observer.observe(termRef.current)
+    window.addEventListener("resize", handleResize)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener("resize", handleResize)
+    }
+  }, [])
 
   const stopProcess = useCallback(async () => {
     if (processIdRef.current) {
       await killProcess(processIdRef.current)
       processIdRef.current = null
-      termInstanceRef.current?.write(`\r\n\x1b[33m[Processo encerrado pelo usuário]\x1b[0m\r\n`)
+      setIsRunning(false)
+      reportActivity("stopped")
+      if (!disposedRef.current) {
+        termInstanceRef.current?.write("\r\n\x1b[33m[killed]\x1b[0m\r\n")
+      }
+      if (sessionIdRef.current) {
+        updateSession(sessionIdRef.current, { status: "stopped" }).catch(() => {})
+      }
     }
-  }, [])
+  }, [reportActivity])
 
   const clearTerminal = useCallback(() => {
-    termInstanceRef.current?.clear()
-  }, [])
+    if (!disposedRef.current) {
+      termInstanceRef.current?.clear()
+      focusTerminal()
+    }
+  }, [focusTerminal])
 
   const copyLogs = useCallback(() => {
     const term = termInstanceRef.current
-    if (term) {
+    if (term && !disposedRef.current) {
       const selection = term.getSelection()
       if (selection) {
         navigator.clipboard.writeText(selection)
@@ -208,82 +440,97 @@ export function TerminalView({
     }
   }, [])
 
-  useEffect(() => {
-    initTerminal()
-    return () => {
-      if (processIdRef.current) {
-        killProcess(processIdRef.current)
-      }
-      termInstanceRef.current?.dispose()
-      termInstanceRef.current = null
+  const restartShell = useCallback(async () => {
+    if (disposedRef.current) return
+    await stopProcess()
+    unlistenRef.current.forEach((fn) => fn())
+    unlistenRef.current = []
+    if (!disposedRef.current) {
+      termInstanceRef.current?.write("\r\n\x1b[36m[restart]\x1b[0m\r\n\r\n")
     }
-  }, [initTerminal])
-
-  useEffect(() => {
-    if (termInstanceRef.current) {
-      termInstanceRef.current.options.theme = getTerminalTheme() as any
-    }
-  }, [theme, getTerminalTheme])
-
-  useEffect(() => {
-    const handleResize = () => fitRef.current?.fit()
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
-  }, [])
+    await startShell()
+    focusTerminal()
+  }, [stopProcess, startShell, focusTerminal])
 
   return (
-    <div className="flex h-full flex-col rounded-[var(--radius-md)] border border-[hsl(var(--border))] bg-[hsl(var(--panel))] overflow-hidden">
-      <div className="flex h-9 items-center gap-2 border-b border-[hsl(var(--border))] px-3">
-        <TerminalIcon className="h-3.5 w-3.5 text-[hsl(var(--accent))]" />
-        <span className="text-xs font-medium">{agentName}</span>
-        <Badge
-          variant={processIdRef.current ? "accent" : "muted"}
-          className="ml-1"
-        >
-          {processIdRef.current ? "Running" : "Idle"}
-        </Badge>
-        <div className="ml-auto flex items-center gap-1">
+    <div className="flex h-full flex-col overflow-hidden bg-[hsl(var(--panel))]">
+      <div
+        className="flex h-7 shrink-0 items-center border-b border-[hsl(var(--border))] bg-[hsl(var(--panel-elevated))]"
+        style={{ boxShadow: `inset 2px 0 0 ${accentColor}` }}
+      >
+        <div className="flex h-full min-w-32 items-center gap-1.5 border-r border-[hsl(var(--border))] px-2">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full text-white shadow-sm" style={{ backgroundColor: accentColor }}>
+            {cliIcon ?? <TerminalIcon className="h-3.5 w-3.5" />}
+          </span>
+          <span className="text-[10px] font-semibold" style={{ color: accentColor }}>{agentName}</span>
+          <span
+            className={`h-1.5 w-1.5 ${
+              isRunning ? "bg-[hsl(var(--success))]" : "bg-[hsl(var(--muted))]"
+            }`}
+            title={isRunning ? "Process running" : "Process stopped"}
+          />
+        </div>
+        <span className="min-w-0 flex-1 truncate px-2 text-[9px] text-[hsl(var(--muted-foreground))]">
+          {workingDir}
+        </span>
+        <div className="ml-auto flex items-center gap-0.5">
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
-            onClick={startProcess}
-            disabled={!command || !!processIdRef.current}
-            title="Iniciar"
+            className="h-6 w-6"
+            onClick={restartShell}
+            disabled={isRunning}
+            title="restart"
           >
-            <Play className="h-3.5 w-3.5" />
+            <RotateCw className="h-3 w-3" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
+            className="h-6 w-6"
             onClick={stopProcess}
-            disabled={!processIdRef.current}
-            title="Encerrar"
+            disabled={!isRunning}
+            title="stop"
           >
-            <Square className="h-3.5 w-3.5" />
+            <Square className="h-3 w-3" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
+            className="h-6 w-6"
             onClick={copyLogs}
-            title="Copiar"
+            title="copy"
           >
-            <Copy className="h-3.5 w-3.5" />
+            <Copy className="h-3 w-3" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
+            className="h-6 w-6"
             onClick={clearTerminal}
-            title="Limpar"
+            title="clear"
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            <Trash2 className="h-3 w-3" />
           </Button>
+          {onClose && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 hover:text-[hsl(var(--danger))]"
+              onClick={onClose}
+              title="close pane"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          )}
         </div>
       </div>
-      <div ref={termRef} className="flex-1 overflow-hidden p-1" />
+      <div
+        ref={termRef}
+        className="min-h-0 flex-1 overflow-hidden px-1 pt-1"
+        onMouseDown={focusTerminal}
+        onClick={focusTerminal}
+      />
     </div>
   )
 }

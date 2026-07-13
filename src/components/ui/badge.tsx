@@ -3,24 +3,24 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
-  "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium transition-colors",
+  "inline-flex items-center gap-1 border px-1.5 py-0 text-[10px] font-medium uppercase tracking-wide transition-colors",
   {
     variants: {
       variant: {
         default:
-          "border-transparent bg-[hsl(var(--panel-elevated))] text-[hsl(var(--foreground))]",
+          "border-[hsl(var(--border))] bg-transparent text-[hsl(var(--muted-foreground))]",
         accent:
-          "border-transparent bg-[hsl(var(--accent)/0.15)] text-[hsl(var(--accent))]",
+          "border-[hsl(var(--accent)/0.3)] bg-transparent text-[hsl(var(--accent))]",
         success:
-          "border-transparent bg-[hsl(var(--success)/0.15)] text-[hsl(var(--success))]",
+          "border-[hsl(var(--success)/0.3)] bg-transparent text-[hsl(var(--success))]",
         warning:
-          "border-transparent bg-[hsl(var(--warning)/0.15)] text-[hsl(var(--warning))]",
+          "border-[hsl(var(--warning)/0.3)] bg-transparent text-[hsl(var(--warning))]",
         danger:
-          "border-transparent bg-[hsl(var(--danger)/0.15)] text-[hsl(var(--danger))]",
+          "border-[hsl(var(--danger)/0.3)] bg-transparent text-[hsl(var(--danger))]",
         muted:
-          "border-transparent bg-[hsl(var(--muted)/0.15)] text-[hsl(var(--muted-foreground))]",
+          "border-transparent bg-transparent text-[hsl(var(--muted))]",
         outline:
-          "border-[hsl(var(--border-strong))] text-[hsl(var(--foreground))]",
+          "border-[hsl(var(--border-strong))] text-[hsl(var(--muted-foreground))]",
       },
     },
     defaultVariants: {

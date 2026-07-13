@@ -6,10 +6,10 @@ import {
   Terminal,
   GitBranch,
   Settings,
-  Layers,
-  Search,
-  Palette,
   History,
+  Search,
+  ChevronRight,
+  CircleDot,
 } from "lucide-react"
 import { Topbar, BottomBar } from "@/components/layout/bars"
 import {
@@ -19,38 +19,46 @@ import {
   SidebarItem,
   SidebarFooter,
 } from "@/components/layout/sidebar"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import {
   CommandPalette,
   type CommandItem,
 } from "@/components/ui/command-palette"
 import { useTheme } from "@/lib/theme"
 import { AgentPanel } from "@/features/agents/agent-panel"
-import { TerminalPanel } from "@/features/terminal/terminal-panel"
+import { OrchestratorPanel } from "@/features/agents/orchestrator-panel"
+import {
+  TerminalGrid,
+  type TerminalPaneSummary,
+} from "@/features/terminal/terminal-grid"
 import { SessionPanel } from "@/features/sessions/session-panel"
-import { PanelsView } from "@/features/workspaces/panels-view"
 import { GitPanel } from "@/features/git/git-panel"
 import { SettingsPanel } from "@/features/settings/settings-panel"
-import { ThemeSwitcher } from "@/components/theme-switcher"
 import { listAgents } from "@/lib/db"
 import { listProcesses } from "@/lib/pty"
 import type { Workspace, Agent } from "@/types"
+import { getCliAppearance } from "@/features/terminal/terminal-cli"
 
 interface WorkspaceViewProps {
   workspace: Workspace
   onBack: () => void
 }
 
-type ViewTab = "panels" | "agents" | "terminals" | "sessions" | "git" | "settings"
+type ViewTab =
+  | "orchestrator"
+  | "agents"
+  | "terminals"
+  | "sessions"
+  | "git"
+  | "settings"
 
 export function WorkspaceView({ workspace, onBack }: WorkspaceViewProps) {
   const { theme, themes, setTheme } = useTheme()
-  const [activeTab, setActiveTab] = useState<ViewTab>("agents")
+  const [activeTab, setActiveTab] = useState<ViewTab>("terminals")
   const [agents, setAgents] = useState<Agent[]>([])
   const [processCount, setProcessCount] = useState(0)
-  const [gitBranch, setGitBranch] = useState("sem branch")
+  const [gitBranch, setGitBranch] = useState("--")
   const [paletteOpen, setPaletteOpen] = useState(false)
+  const [terminalPanes, setTerminalPanes] = useState<TerminalPaneSummary[]>([])
 
   const refreshAgents = useCallback(async () => {
     try {
@@ -88,12 +96,6 @@ export function WorkspaceView({ workspace, onBack }: WorkspaceViewProps) {
       } else if ((e.ctrlKey || e.metaKey) && e.key === "t") {
         e.preventDefault()
         setActiveTab("terminals")
-      } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "d") {
-        e.preventDefault()
-        setActiveTab("git")
-      } else if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === "s") {
-        e.preventDefault()
-        setActiveTab("settings")
       }
     }
     window.addEventListener("keydown", handleKeyDown)
@@ -103,55 +105,52 @@ export function WorkspaceView({ workspace, onBack }: WorkspaceViewProps) {
   const commands = useMemo<CommandItem[]>(
     () => [
       {
-        id: "tab-agents",
-        label: "Ver Agentes",
-        icon: <Bot className="h-4 w-4" />,
-        shortcut: "Ctrl+N",
-        action: () => setActiveTab("agents"),
-      },
-      {
         id: "tab-terminals",
-        label: "Abrir Terminais",
-        icon: <Terminal className="h-4 w-4" />,
-        shortcut: "Ctrl+T",
+        label: "terminals (grid)",
+        icon: <Terminal className="h-3.5 w-3.5" />,
+        shortcut: "^T",
         action: () => setActiveTab("terminals"),
       },
       {
+        id: "tab-orchestrator",
+        label: "orchestrator",
+        icon: <Cpu className="h-3.5 w-3.5" />,
+        action: () => setActiveTab("orchestrator"),
+      },
+      {
+        id: "tab-agents",
+        label: "agents",
+        icon: <Bot className="h-3.5 w-3.5" />,
+        shortcut: "^N",
+        action: () => setActiveTab("agents"),
+      },
+      {
         id: "tab-sessions",
-        label: "Ver Sessões",
-        icon: <History className="h-4 w-4" />,
+        label: "sessions",
+        icon: <History className="h-3.5 w-3.5" />,
         action: () => setActiveTab("sessions"),
       },
       {
         id: "tab-git",
-        label: "Ver Git Diff",
-        icon: <GitBranch className="h-4 w-4" />,
-        shortcut: "Ctrl+Shift+D",
+        label: "git diff",
+        icon: <GitBranch className="h-3.5 w-3.5" />,
         action: () => setActiveTab("git"),
       },
       {
-        id: "tab-panels",
-        label: "Multi-Painel",
-        icon: <Layers className="h-4 w-4" />,
-        action: () => setActiveTab("panels"),
-      },
-      {
         id: "tab-settings",
-        label: "Abrir Configurações",
-        icon: <Settings className="h-4 w-4" />,
-        shortcut: "Ctrl+S",
+        label: "settings",
+        icon: <Settings className="h-3.5 w-3.5" />,
         action: () => setActiveTab("settings"),
       },
       ...themes.map((t) => ({
         id: `theme-${t.id}`,
-        label: `Tema: ${t.name}`,
-        icon: <Palette className="h-4 w-4" />,
+        label: `theme: ${t.name}`,
         action: () => setTheme(t.id),
       })),
       {
         id: "back",
-        label: "Voltar para Workspaces",
-        icon: <Folder className="h-4 w-4" />,
+        label: "back to workspaces",
+        icon: <Folder className="h-3.5 w-3.5" />,
         action: onBack,
       },
     ],
@@ -159,106 +158,208 @@ export function WorkspaceView({ workspace, onBack }: WorkspaceViewProps) {
   )
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden">
+    <div className="flex h-screen flex-col overflow-hidden bg-[hsl(var(--background))]">
       <Topbar>
-        <Button variant="ghost" size="sm" onClick={onBack}>
-          <Folder className="h-4 w-4" />
-          {workspace.name}
-        </Button>
-        <Badge variant="muted">{workspace.path}</Badge>
+        <button
+          type="button"
+          className="-ml-2 flex h-8 w-52 shrink-0 items-center gap-2 border-r border-[hsl(var(--border))] px-2 hover:bg-[hsl(var(--panel-elevated))]"
+          onClick={onBack}
+          title="Back to workspaces"
+        >
+          <span className="flex h-4 w-4 items-center justify-center border border-[hsl(var(--border-strong))] bg-[hsl(var(--foreground))] text-[8px] font-bold text-[hsl(var(--background))]">
+            A
+          </span>
+          <span className="text-[10px] font-semibold tracking-[0.14em]">ATENA</span>
+        </button>
+        <div className="flex min-w-0 items-center gap-1.5 px-1 text-[10px]">
+          <Folder className="h-3 w-3 text-[hsl(var(--muted-foreground))]" />
+          <span className="truncate font-medium">{workspace.name}</span>
+          <ChevronRight className="h-3 w-3 text-[hsl(var(--muted))]" />
+          <span className="hidden truncate text-[9px] text-[hsl(var(--muted-foreground))] xl:block">
+            {workspace.path}
+          </span>
+        </div>
         <div className="ml-auto flex items-center gap-2">
+          <span className="hidden items-center gap-1.5 text-[9px] text-[hsl(var(--muted-foreground))] md:flex">
+            <CircleDot className="h-3 w-3 text-[hsl(var(--success))]" />
+            local runtime
+          </span>
           <button
-            className="flex h-8 items-center gap-2 rounded-[var(--radius-sm)] border border-[hsl(var(--border))] bg-[hsl(var(--panel))] px-3 text-xs text-[hsl(var(--muted-foreground))] cursor-pointer hover:bg-[hsl(var(--panel-elevated))] transition-colors"
+            className="flex h-6 items-center gap-1.5 border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-2 text-[9px] text-[hsl(var(--muted-foreground))] transition-colors hover:border-[hsl(var(--border-strong))] hover:text-[hsl(var(--foreground))]"
             onClick={() => setPaletteOpen(true)}
           >
-            <Search className="h-3.5 w-3.5" />
-            Buscar...
-            <kbd className="rounded border border-[hsl(var(--border))] px-1 text-[10px]">
-              Ctrl+K
-            </kbd>
+            <Search className="h-3 w-3" />
+            <span className="hidden sm:inline">command</span>
+            <kbd className="text-[9px]">^K</kbd>
           </button>
         </div>
       </Topbar>
 
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar className="w-56">
+        <Sidebar className="w-52 shrink-0">
           <SidebarHeader>
-            <span className="text-sm font-semibold">Workspace</span>
+            <div className="flex w-full items-center gap-2">
+              <span className="text-[9px] font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+                project
+              </span>
+              <span className="ml-auto h-1.5 w-1.5 bg-[hsl(var(--success))]" title="Workspace online" />
+            </div>
           </SidebarHeader>
           <SidebarContent>
-            <div className="space-y-1 p-2">
-              <p className="px-3 pb-1 text-xs font-medium uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
-                Geral
-              </p>
-              <SidebarItem
-                active={activeTab === "panels"}
-                onClick={() => setActiveTab("panels")}
+            <div className="border-b border-[hsl(var(--border))] px-2 py-2">
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 text-left"
+                onClick={() => setActiveTab("terminals")}
               >
-                <Layers className="h-4 w-4" />
-                Painéis
+                <ChevronRight className="h-3 w-3 text-[hsl(var(--muted-foreground))]" />
+                <Folder className="h-3 w-3 text-[hsl(var(--warning))]" />
+                <span className="min-w-0 flex-1 truncate text-[10px] font-medium">
+                  {workspace.name}
+                </span>
+                <span className="text-[8px] text-[hsl(var(--muted-foreground))]">OPEN</span>
+              </button>
+            </div>
+            <p className="px-3 pb-0.5 pt-2 text-[9px] font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+              tools
+            </p>
+            <div className="space-y-0.5 p-1.5">
+              <SidebarItem
+                active={activeTab === "terminals"}
+                onClick={() => setActiveTab("terminals")}
+              >
+                <Terminal className="h-3.5 w-3.5" />
+                terminals
+              </SidebarItem>
+              {terminalPanes.length > 0 && (
+                <div className="ml-5 border-l border-[hsl(var(--border))] pl-1.5">
+                  {terminalPanes.map((pane) => {
+                    const cliAppearance = getCliAppearance(pane.cli)
+                    const CliIcon = cliAppearance.icon
+                    const statusColor =
+                      pane.status === "running"
+                        ? "bg-[hsl(var(--success))]"
+                        : pane.status === "stopped"
+                          ? "bg-[hsl(var(--danger))]"
+                          : pane.status === "idle"
+                            ? "bg-[hsl(var(--warning))]"
+                            : "bg-[hsl(var(--accent))]"
+                    return (
+                      <button
+                        key={pane.id}
+                        type="button"
+                        className="group my-0.5 flex w-full min-w-0 items-center gap-1.5 px-1.5 py-1 text-left hover:bg-[hsl(var(--panel-elevated))]"
+                        onClick={() => setActiveTab("terminals")}
+                        title={`${pane.label}: ${pane.status} - ${pane.cli}`}
+                      >
+                        <span
+                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white shadow-sm ring-1 ring-white/15"
+                          style={{ backgroundColor: cliAppearance.color }}
+                          title={`${cliAppearance.label} CLI`}
+                        >
+                          <CliIcon className="h-4 w-4" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span
+                            className="block truncate text-[9px]"
+                            style={{ color: cliAppearance.color }}
+                          >
+                            {pane.label}
+                          </span>
+                          <span className="flex min-w-0 items-center gap-1 text-[8px] uppercase text-[hsl(var(--muted-foreground))]">
+                            <span>{pane.status}</span>
+                            <span className="text-[hsl(var(--muted))]">/</span>
+                            <span className="truncate normal-case">{pane.cli}</span>
+                          </span>
+                        </span>
+                        <span
+                          className={`h-1.5 w-1.5 shrink-0 ${statusColor}`}
+                          title={pane.status}
+                        />
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+              <SidebarItem
+                active={activeTab === "orchestrator"}
+                onClick={() => setActiveTab("orchestrator")}
+              >
+                <Cpu className="h-3.5 w-3.5" />
+                orchestrator
               </SidebarItem>
               <SidebarItem
                 active={activeTab === "agents"}
                 onClick={() => setActiveTab("agents")}
               >
-                <Bot className="h-4 w-4" />
-                Agentes
-              </SidebarItem>
-              <SidebarItem
-                active={activeTab === "terminals"}
-                onClick={() => setActiveTab("terminals")}
-              >
-                <Terminal className="h-4 w-4" />
-                Terminais
+                <Bot className="h-3.5 w-3.5" />
+                agents
               </SidebarItem>
               <SidebarItem
                 active={activeTab === "sessions"}
                 onClick={() => setActiveTab("sessions")}
               >
-                <History className="h-4 w-4" />
-                Sessões
+                <History className="h-3.5 w-3.5" />
+                sessions
               </SidebarItem>
               <SidebarItem
                 active={activeTab === "git"}
                 onClick={() => setActiveTab("git")}
               >
-                <GitBranch className="h-4 w-4" />
-                Git
+                <GitBranch className="h-3.5 w-3.5" />
+                git
               </SidebarItem>
             </div>
-            <div className="space-y-1 p-2">
-              <p className="px-3 pb-1 text-xs font-medium uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
-                Configurações
+            <div className="space-y-0.5 p-1.5">
+              <p className="px-3 pb-0.5 text-[10px] uppercase tracking-wider text-[hsl(var(--muted))]">
+                config
               </p>
               <SidebarItem
                 active={activeTab === "settings"}
                 onClick={() => setActiveTab("settings")}
               >
-                <Settings className="h-4 w-4" />
-                Preferências
+                <Settings className="h-3.5 w-3.5" />
+                settings
               </SidebarItem>
             </div>
           </SidebarContent>
           <SidebarFooter>
-            <ThemeSwitcher />
+            <select
+              value={theme.id}
+              onChange={(e) => setTheme(e.target.value as typeof theme.id)}
+              className="h-6 w-full border border-[hsl(var(--border))] bg-[hsl(var(--panel-elevated))] px-1.5 text-[10px] text-[hsl(var(--muted-foreground))] cursor-pointer"
+            >
+              {themes.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
           </SidebarFooter>
         </Sidebar>
 
-        <main className="flex-1 overflow-hidden bg-[hsl(var(--background))]">
+        <main className="relative min-w-0 flex-1 overflow-hidden bg-[hsl(var(--background))]">
+          <div
+            className={`absolute inset-0 ${
+              activeTab === "terminals"
+                ? "visible"
+                : "invisible pointer-events-none"
+            }`}
+            aria-hidden={activeTab !== "terminals"}
+          >
+            <TerminalGrid
+              workspaceId={workspace.id}
+              workspacePath={workspace.path}
+              onPanesChange={setTerminalPanes}
+            />
+          </div>
+          {activeTab === "orchestrator" && (
+            <OrchestratorPanel workspacePath={workspace.path} />
+          )}
           {activeTab === "agents" && (
             <AgentPanel
               workspaceId={workspace.id}
               workspacePath={workspace.path}
-            />
-          )}
-          {activeTab === "panels" && (
-            <PanelsView workspace={workspace} agents={agents} />
-          )}
-          {activeTab === "terminals" && (
-            <TerminalPanel
-              workspaceId={workspace.id}
-              workspacePath={workspace.path}
-              agents={agents}
             />
           )}
           {activeTab === "sessions" && (
@@ -275,18 +376,19 @@ export function WorkspaceView({ workspace, onBack }: WorkspaceViewProps) {
       </div>
 
       <BottomBar>
-        <span className="flex items-center gap-1.5">
-          <GitBranch className="h-3 w-3" />
+        <span className="flex items-center gap-1 text-[hsl(var(--success))]">
+          <span className="h-1.5 w-1.5 bg-current" />
+          ready
+        </span>
+        <span className="flex items-center gap-1">
+          <GitBranch className="h-2.5 w-2.5" />
           {gitBranch}
         </span>
-        <span className="flex items-center gap-1.5">
-          <Cpu className="h-3 w-3" />
-          {processCount} processo{processCount !== 1 ? "s" : ""} ativo{processCount !== 1 ? "s" : ""}
+        <span className="flex items-center gap-1">
+          <Cpu className="h-2.5 w-2.5" />
+          {processCount} proc{processCount !== 1 ? "s" : ""}
         </span>
-        <span className="ml-auto flex items-center gap-1.5">
-          <Palette className="h-3 w-3" />
-          {theme.name}
-        </span>
+        <span className="ml-auto">{theme.name}</span>
       </BottomBar>
 
       <CommandPalette

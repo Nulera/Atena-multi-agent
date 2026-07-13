@@ -11,8 +11,8 @@
     margin: 0;
     background: hsl(var(--background));
     color: hsl(var(--foreground));
-    font-family: var(--font-sans);
-    font-size: 14px;
+    font-family: var(--font-mono);
+    font-size: 13px;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -23,21 +23,20 @@
   }
 
   ::selection {
-    background: hsl(var(--accent) / 0.3);
+    background: hsl(var(--accent) / 0.25);
   }
 
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 4px;
+    height: 4px;
   }
 
   ::-webkit-scrollbar-track {
-    background: hsl(var(--panel));
+    background: transparent;
   }
 
   ::-webkit-scrollbar-thumb {
     background: hsl(var(--border-strong));
-    border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb:hover {

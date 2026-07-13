@@ -6,15 +6,12 @@ import {
   Cpu,
   Trash2,
   Settings,
-  PanelsTopLeft,
   FolderInput,
   CheckCircle2,
   AlertCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card } from "@/components/ui/card"
-import { EmptyState } from "@/components/ui/empty-state"
 import { cn } from "@/lib/utils"
 import { validatePath, pickFolder } from "@/lib/db"
 import type { Workspace } from "@/types"
@@ -80,65 +77,59 @@ export function WorkspaceSelection({
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="flex h-14 items-center justify-between border-b border-[hsl(var(--border))] bg-[hsl(var(--panel))] px-6">
+      <header className="flex h-10 items-center justify-between border-b border-[hsl(var(--border))] px-4">
         <div className="flex items-center gap-2">
-          <Cpu className="h-5 w-5 text-[hsl(var(--accent))]" />
-          <span className="text-lg font-semibold tracking-tight">Atena</span>
-          <span className="ml-2 text-xs text-[hsl(var(--muted-foreground))]">
-            Local-First Multi-Agent Control Center
+          <span className="text-[hsl(var(--accent))]">$</span>
+          <span className="text-sm font-semibold tracking-tight">atena</span>
+          <span className="ml-1 text-[10px] text-[hsl(var(--muted))]">
+            local-first multi-agent control center
           </span>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" title="Settings">
-            <Settings className="h-4 w-4" />
-          </Button>
-        </div>
+        <Button variant="ghost" size="icon" title="Settings">
+          <Settings className="h-3.5 w-3.5" />
+        </Button>
       </header>
 
-      <div className="flex flex-1 items-center justify-center p-8">
-        <div className="w-full max-w-3xl space-y-6">
-          <div className="space-y-2 text-center">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Selecione um Workspace
+      <div className="flex flex-1 items-center justify-center p-6">
+        <div className="w-full max-w-2xl space-y-4">
+          <div className="space-y-1">
+            <h1 className="text-sm font-medium">
+              <span className="text-[hsl(var(--accent))]">{'>'}</span> select workspace
             </h1>
-            <p className="text-sm text-[hsl(var(--muted-foreground))]">
-              Organize seus projetos, agentes e sessões localmente
+            <p className="text-[11px] text-[hsl(var(--muted))]">
+              organize projects, agents and sessions locally
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[hsl(var(--muted-foreground))]" />
+              <Search className="absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-[hsl(var(--muted))]" />
               <Input
-                placeholder="Buscar workspace..."
+                placeholder="search..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
+                className="pl-8"
               />
             </div>
-            <Button onClick={() => setShowCreate(!showCreate)}>
-              <FolderPlus className="h-4 w-4" />
-              Novo Workspace
+            <Button variant="default" size="md" onClick={() => setShowCreate(!showCreate)}>
+              <FolderPlus className="h-3.5 w-3.5" />
+              new
             </Button>
           </div>
 
           {showCreate && (
-            <Card className="space-y-3 p-4">
+            <div className="space-y-2.5 rounded-[var(--radius-sm)] border border-[hsl(var(--border))] bg-[hsl(var(--panel))] p-3">
               <div className="space-y-1">
-                <label className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
-                  Nome
-                </label>
+                <label className="text-[10px] text-[hsl(var(--muted))]">name</label>
                 <Input
-                  placeholder="Meu Projeto"
+                  placeholder="my-project"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
-                  Caminho da pasta local
-                </label>
-                <div className="flex gap-2">
+                <label className="text-[10px] text-[hsl(var(--muted))]">path</label>
+                <div className="flex gap-1.5">
                   <Input
                     placeholder="C:\projetos\meu-projeto"
                     value={path}
@@ -147,118 +138,94 @@ export function WorkspaceSelection({
                       checkPath(e.target.value)
                     }}
                     className={cn(
-                      pathValid === false &&
-                        "border-[hsl(var(--danger))]",
-                      pathValid === true &&
-                        "border-[hsl(var(--success))]"
+                      pathValid === false && "border-[hsl(var(--danger))]",
+                      pathValid === true && "border-[hsl(var(--success))]"
                     )}
                   />
                   <Button
                     variant="outline"
                     size="icon"
                     onClick={handlePickFolder}
-                    title="Selecionar pasta"
+                    title="browse"
                   >
-                    <FolderInput className="h-4 w-4" />
+                    <FolderInput className="h-3.5 w-3.5" />
                   </Button>
                 </div>
                 {pathChecking && (
-                  <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                    Verificando...
-                  </p>
+                  <p className="text-[10px] text-[hsl(var(--muted))]">checking...</p>
                 )}
                 {pathValid === true && (
-                  <p className="flex items-center gap-1 text-xs text-[hsl(var(--success))]">
-                    <CheckCircle2 className="h-3 w-3" />
-                    Pasta válida
+                  <p className="flex items-center gap-1 text-[10px] text-[hsl(var(--success))]">
+                    <CheckCircle2 className="h-2.5 w-2.5" /> valid
                   </p>
                 )}
                 {pathValid === false && (
-                  <p className="flex items-center gap-1 text-xs text-[hsl(var(--danger))]">
-                    <AlertCircle className="h-3 w-3" />
-                    Pasta não encontrada
+                  <p className="flex items-center gap-1 text-[10px] text-[hsl(var(--danger))]">
+                    <AlertCircle className="h-2.5 w-2.5" /> not found
                   </p>
                 )}
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
-                  Descrição (opcional)
-                </label>
+                <label className="text-[10px] text-[hsl(var(--muted))]">description</label>
                 <Input
-                  placeholder="Breve descrição do workspace"
+                  placeholder="optional"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                 />
               </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="ghost" onClick={() => setShowCreate(false)}>
-                  Cancelar
+              <div className="flex justify-end gap-1.5 pt-1">
+                <Button variant="ghost" size="sm" onClick={() => setShowCreate(false)}>
+                  cancel
                 </Button>
-                <Button
-                  onClick={handleCreate}
-                  disabled={!name.trim() || !path.trim() || !pathValid}
-                >
-                  Criar
+                <Button variant="default" size="sm" onClick={handleCreate} disabled={!name.trim() || !path.trim() || !pathValid}>
+                  create
                 </Button>
               </div>
-            </Card>
+            </div>
           )}
 
           {filtered.length === 0 ? (
-            <EmptyState
-              icon={<PanelsTopLeft className="h-8 w-8" />}
-              title="Nenhum workspace encontrado"
-              description="Crie seu primeiro workspace para começar a usar o Atena"
-              action={
-                !showCreate && (
-                  <Button onClick={() => setShowCreate(true)}>
-                    <FolderPlus className="h-4 w-4" />
-                    Criar Workspace
-                  </Button>
-                )
-              }
-            />
+            <div className="flex flex-col items-center gap-2 rounded-[var(--radius-sm)] border border-dashed border-[hsl(var(--border))] p-8 text-center">
+              <Cpu className="h-6 w-6 text-[hsl(var(--muted))] opacity-40" />
+              <div>
+                <p className="text-xs text-[hsl(var(--foreground))]">no workspaces found</p>
+                <p className="mt-0.5 text-[10px] text-[hsl(var(--muted))]">
+                  create your first workspace to get started
+                </p>
+              </div>
+              {!showCreate && (
+                <Button variant="default" size="sm" onClick={() => setShowCreate(true)} className="mt-1">
+                  <FolderPlus className="h-3.5 w-3.5" />
+                  create workspace
+                </Button>
+              )}
+            </div>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1">
               {filtered.map((workspace) => (
-                <Card
+                <div
                   key={workspace.id}
-                  className={cn(
-                    "group cursor-pointer p-4 transition-colors hover:border-[hsl(var(--accent)/0.5)]"
-                  )}
+                  className="group flex cursor-pointer items-center gap-2.5 rounded-[var(--radius-sm)] border border-[hsl(var(--border))] px-3 py-2 transition-colors hover:border-[hsl(var(--accent)/0.4)]"
                   onClick={() => onOpen(workspace)}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-sm)] bg-[hsl(var(--panel-elevated))]">
-                        <FolderOpen className="h-5 w-5 text-[hsl(var(--accent))]" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">{workspace.name}</p>
-                        <p className="max-w-[200px] truncate text-xs text-[hsl(var(--muted-foreground))]">
-                          {workspace.path}
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="opacity-0 transition-opacity group-hover:opacity-100"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onRemove(workspace.id)
-                      }}
-                      title="Remover da lista"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  <FolderOpen className="h-3.5 w-3.5 shrink-0 text-[hsl(var(--accent))]" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-medium">{workspace.name}</p>
+                    <p className="truncate text-[10px] text-[hsl(var(--muted))]">{workspace.path}</p>
                   </div>
-                  {workspace.description && (
-                    <p className="mt-2 text-xs text-[hsl(var(--muted-foreground))]">
-                      {workspace.description}
-                    </p>
-                  )}
-                </Card>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="opacity-0 transition-opacity group-hover:opacity-100"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onRemove(workspace.id)
+                    }}
+                    title="remove"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
               ))}
             </div>
           )}

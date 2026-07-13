@@ -21,19 +21,18 @@ const DialogContent = forwardRef<
   React.ComponentPropsWithoutRef<typeof Content>
 >(({ className, children, ...props }, ref) => (
   <Portal>
-    <Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
+    <Overlay className="fixed inset-0 z-50 bg-black/70" />
     <Content
       ref={ref}
       className={cn(
-        "fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-md)] border border-[hsl(var(--border))] bg-[hsl(var(--panel))] p-6 shadow-xl",
+        "fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-sm)] border border-[hsl(var(--border-strong))] bg-[hsl(var(--panel))] p-4",
         className
       )}
       {...props}
     >
       {children}
-      <DialogClose className="absolute right-4 top-4 rounded-[var(--radius-sm)] p-1 text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--panel-elevated))] hover:text-[hsl(var(--foreground))] cursor-pointer">
-        <X className="h-4 w-4" />
-        <span className="sr-only">Fechar</span>
+      <DialogClose className="absolute right-3 top-3 p-1 text-[hsl(var(--muted))] transition-colors hover:text-[hsl(var(--foreground))] cursor-pointer">
+        <X className="h-3.5 w-3.5" />
       </DialogClose>
     </Content>
   </Portal>
@@ -45,7 +44,7 @@ function DialogHeader({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("mb-4 flex flex-col gap-1.5", className)} {...props} />
+    <div className={cn("mb-3 flex flex-col gap-1", className)} {...props} />
   )
 }
 
@@ -54,7 +53,7 @@ function DialogFooter({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("mt-4 flex justify-end gap-2", className)} {...props} />
+    <div className={cn("mt-3 flex justify-end gap-1.5", className)} {...props} />
   )
 }
 
@@ -62,7 +61,11 @@ const DialogTitle = forwardRef<
   React.ElementRef<typeof Title>,
   React.ComponentPropsWithoutRef<typeof Title>
 >(({ className, ...props }, ref) => (
-  <Title ref={ref} className={cn("text-lg font-semibold", className)} {...props} />
+  <Title
+    ref={ref}
+    className={cn("text-sm font-semibold", className)}
+    {...props}
+  />
 ))
 DialogTitle.displayName = "DialogTitle"
 
@@ -72,7 +75,7 @@ const DialogDescription = forwardRef<
 >(({ className, ...props }, ref) => (
   <Description
     ref={ref}
-    className={cn("text-sm text-[hsl(var(--muted-foreground))]", className)}
+    className={cn("text-[11px] text-[hsl(var(--muted))]", className)}
     {...props}
   />
 ))

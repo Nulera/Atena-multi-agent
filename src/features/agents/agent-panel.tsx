@@ -10,7 +10,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { AgentCard } from "@/components/ui/agent-card"
-import { EmptyState } from "@/components/ui/empty-state"
 import {
   Dialog,
   DialogContent,
@@ -76,26 +75,15 @@ export function AgentPanel({
       try {
         if (editingAgent) {
           await updateAgent(editingAgent.id, data)
-          toast({
-            title: "Agente atualizado",
-            variant: "success",
-          })
+          toast({ title: "agent updated", variant: "success" })
         } else {
           await createAgent(data)
-          toast({
-            title: "Agente criado",
-            description: data.name,
-            variant: "success",
-          })
+          toast({ title: "agent created", description: data.name, variant: "success" })
         }
         await refresh()
         setEditingAgent(null)
       } catch (err) {
-        toast({
-          title: "Erro",
-          description: String(err),
-          variant: "danger",
-        })
+        toast({ title: "error", description: String(err), variant: "danger" })
       }
     },
     [editingAgent, refresh, toast]
@@ -105,18 +93,10 @@ export function AgentPanel({
     if (!deleteConfirm) return
     try {
       await deleteAgent(deleteConfirm.id)
-      toast({
-        title: "Agente excluído",
-        description: deleteConfirm.name,
-        variant: "default",
-      })
+      toast({ title: "agent deleted", description: deleteConfirm.name, variant: "default" })
       await refresh()
     } catch (err) {
-      toast({
-        title: "Erro ao excluir",
-        description: String(err),
-        variant: "danger",
-      })
+      toast({ title: "error", description: String(err), variant: "danger" })
     } finally {
       setDeleteConfirm(null)
     }
@@ -127,24 +107,17 @@ export function AgentPanel({
       try {
         await createAgent({
           workspaceId: agent.workspaceId,
-          name: `${agent.name} (cópia)`,
+          name: `${agent.name}-copy`,
           role: agent.role,
           description: agent.description,
           basePrompt: agent.basePrompt,
           command: agent.command,
           workingDirectory: agent.workingDirectory,
         })
-        toast({
-          title: "Agente duplicado",
-          variant: "success",
-        })
+        toast({ title: "agent duplicated", variant: "success" })
         await refresh()
       } catch (err) {
-        toast({
-          title: "Erro ao duplicar",
-          description: String(err),
-          variant: "danger",
-        })
+        toast({ title: "error", description: String(err), variant: "danger" })
       }
     },
     [refresh, toast]
@@ -156,93 +129,102 @@ export function AgentPanel({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 p-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[hsl(var(--muted-foreground))]" />
-          <Input
-            placeholder="Buscar agente..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-8 pl-8 text-xs"
-          />
+      <div className="flex items-center gap-2 border-b border-[hsl(var(--border))] px-3 py-2">
+        <span className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
+          agents
+        </span>
+        <span className="text-[10px] text-[hsl(var(--muted))]">({filtered.length})</span>
+        <div className="ml-auto flex items-center gap-1.5">
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-[hsl(var(--muted))]" />
+            <Input
+              placeholder="filter..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-6 w-32 pl-7 text-[11px]"
+            />
+          </div>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => {
+              setEditingAgent(null)
+              setDialogOpen(true)
+            }}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            new
+          </Button>
         </div>
-        <Button
-          size="sm"
-          onClick={() => {
-            setEditingAgent(null)
-            setDialogOpen(true)
-          }}
-        >
-          <Plus className="h-4 w-4" />
-          Novo Agente
-        </Button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 pb-4">
+      <div className="flex-1 overflow-y-auto p-2">
         {loading ? (
-          <p className="text-sm text-[hsl(var(--muted-foreground))]">
-            Carregando...
-          </p>
+          <p className="text-[11px] text-[hsl(var(--muted))]">loading...</p>
         ) : filtered.length === 0 ? (
-          <EmptyState
-            icon={<Bot className="h-8 w-8" />}
-            title="Nenhum agente"
-            description="Crie agentes especializados para este workspace"
-            action={
-              <Button
-                size="sm"
-                onClick={() => {
-                  setEditingAgent(null)
-                  setDialogOpen(true)
-                }}
-              >
-                <Plus className="h-4 w-4" />
-                Criar Agente
-              </Button>
-            }
-          />
+          <div className="flex flex-col items-center gap-2 p-8 text-center">
+            <Bot className="h-6 w-6 text-[hsl(var(--muted))] opacity-40" />
+            <div>
+              <p className="text-xs">no agents</p>
+              <p className="mt-0.5 text-[10px] text-[hsl(var(--muted))]">
+                create agents for this workspace
+              </p>
+            </div>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => {
+                setEditingAgent(null)
+                setDialogOpen(true)
+              }}
+              className="mt-1"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              create agent
+            </Button>
+          </div>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((agent) => (
               <div key={agent.id} className="group relative">
                 <AgentCard agent={agent} onClick={() => onAgentClick?.(agent)} />
-                <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                <div className="absolute right-1 top-1 flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 bg-[hsl(var(--panel))]"
+                    className="h-6 w-6"
                     onClick={(e) => {
                       e.stopPropagation()
                       setEditingAgent(agent)
                       setDialogOpen(true)
                     }}
-                    title="Editar"
+                    title="edit"
                   >
-                    <Pencil className="h-3.5 w-3.5" />
+                    <Pencil className="h-3 w-3" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 bg-[hsl(var(--panel))]"
+                    className="h-6 w-6"
                     onClick={(e) => {
                       e.stopPropagation()
                       handleDuplicate(agent)
                     }}
-                    title="Duplicar"
+                    title="duplicate"
                   >
-                    <Copy className="h-3.5 w-3.5" />
+                    <Copy className="h-3 w-3" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 bg-[hsl(var(--panel))] text-[hsl(var(--danger))]"
+                    className="h-6 w-6 text-[hsl(var(--danger))]"
                     onClick={(e) => {
                       e.stopPropagation()
                       setDeleteConfirm(agent)
                     }}
-                    title="Excluir"
+                    title="delete"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
               </div>
@@ -263,18 +245,17 @@ export function AgentPanel({
       <Dialog open={!!deleteConfirm} onOpenChange={(o) => !o && setDeleteConfirm(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Excluir agente?</DialogTitle>
+            <DialogTitle>delete agent?</DialogTitle>
             <DialogDescription>
-              Tem certeza que deseja excluir "{deleteConfirm?.name}"? Esta ação
-              não pode ser desfeita.
+              "{deleteConfirm?.name}" will be permanently removed.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setDeleteConfirm(null)}>
-              Cancelar
+            <Button variant="ghost" size="sm" onClick={() => setDeleteConfirm(null)}>
+              cancel
             </Button>
-            <Button variant="danger" onClick={handleDelete}>
-              Excluir
+            <Button variant="danger" size="sm" onClick={handleDelete}>
+              delete
             </Button>
           </DialogFooter>
         </DialogContent>
