@@ -4,7 +4,10 @@ use chrono::Utc;
 use uuid::Uuid;
 
 #[tauri::command]
-pub fn list_sessions(workspace_id: Option<String>, agent_id: Option<String>) -> Result<Vec<Session>, String> {
+pub fn list_sessions(
+    workspace_id: Option<String>,
+    agent_id: Option<String>,
+) -> Result<Vec<Session>, String> {
     let conn = get_conn()?;
 
     let mut sql = String::from("SELECT id, workspace_id, agent_id, name, status, started_at, ended_at, created_at, updated_at FROM sessions");
@@ -51,7 +54,11 @@ pub fn list_sessions(workspace_id: Option<String>, agent_id: Option<String>) -> 
 }
 
 #[tauri::command]
-pub fn create_session(workspace_id: String, agent_id: String, name: String) -> Result<Session, String> {
+pub fn create_session(
+    workspace_id: String,
+    agent_id: String,
+    name: String,
+) -> Result<Session, String> {
     let conn = get_conn()?;
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
@@ -76,11 +83,16 @@ pub fn create_session(workspace_id: String, agent_id: String, name: String) -> R
 }
 
 #[tauri::command]
-pub fn update_session(id: String, name: Option<String>, status: Option<String>) -> Result<(), String> {
+pub fn update_session(
+    id: String,
+    name: Option<String>,
+    status: Option<String>,
+) -> Result<(), String> {
     let conn = get_conn()?;
     let now = Utc::now().to_rfc3339();
 
-    let ended_at = if status.as_deref() == Some("finished") || status.as_deref() == Some("stopped") {
+    let ended_at = if status.as_deref() == Some("finished") || status.as_deref() == Some("stopped")
+    {
         Some(now.clone())
     } else {
         None
@@ -130,7 +142,11 @@ pub fn delete_session(id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn add_session_log(session_id: String, log_type: String, content: String) -> Result<SessionLog, String> {
+pub fn add_session_log(
+    session_id: String,
+    log_type: String,
+    content: String,
+) -> Result<SessionLog, String> {
     let conn = get_conn()?;
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
@@ -172,4 +188,63 @@ pub fn list_session_logs(session_id: String) -> Result<Vec<SessionLog>, String> 
         .map_err(|e| e.to_string())?;
 
     Ok(logs)
+}
+
+#[tauri::command]
+pub fn export_session(session_id: String, path: String, format: String) -> Result<String, String> {
+    let conn = get_conn()?;
+    let session = conn
+        .query_row(
+            "SELECT id, workspace_id, agent_id, name, status, started_at, ended_at, created_at, updated_at FROM sessions WHERE id = ?1",
+            rusqlite::params![session_id],
+            |row| {
+                Ok(Session {
+                    id: row.get(0)?,
+                    workspace_id: row.get(1)?,
+                    agent_id: row.get(2)?,
+                    name: row.get(3)?,
+                    status: row.get(4)?,
+                    started_at: row.get(5)?,
+                    ended_at: row.get(6)?,
+                    created_at: row.get(7)?,
+                    updated_at: row.get(8)?,
+                })
+            },
+        )
+        .map_err(|e| e.to_string())?;
+
+    let logs = list_session_logs(session.id.clone())?;
+    let content = match format.as_str() {
+        "json" => serde_json::to_string_pretty(&serde_json::json!({
+            "version": 1,
+            "exportedAt": Utc::now().to_rfc3339(),
+            "session": session,
+            "logs": logs,
+        }))
+        .map_err(|e| e.to_string())?,
+        "markdown" => {
+            let mut document = format!(
+                "# {}\n\n- Status: `{}`\n- Started: {}\n- Ended: {}\n\n## Transcript\n\n",
+                if session.name.is_empty() {
+                    "Atena session"
+                } else {
+                    &session.name
+                },
+                session.status,
+                session.started_at,
+                session.ended_at.as_deref().unwrap_or("active")
+            );
+            for log in logs {
+                document.push_str(&format!(
+                    "### {} · {}\n\n```text\n{}\n```\n\n",
+                    log.log_type, log.created_at, log.content
+                ));
+            }
+            document
+        }
+        _ => return Err("Unsupported export format".to_string()),
+    };
+
+    std::fs::write(&path, content).map_err(|e| format!("Failed to export session: {e}"))?;
+    Ok(path)
 }

@@ -148,6 +148,14 @@ export async function listSessionLogs(
   return await invoke<SessionLog[]>("list_session_logs", { sessionId })
 }
 
+export async function exportSession(
+  sessionId: string,
+  path: string,
+  format: "markdown" | "json"
+): Promise<string> {
+  return await invoke<string>("export_session", { sessionId, path, format })
+}
+
 // ---- Settings ----
 
 export async function getSetting(key: string): Promise<string | null> {

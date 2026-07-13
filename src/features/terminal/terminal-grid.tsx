@@ -13,6 +13,7 @@ import {
 } from "@/features/terminal/terminal-view"
 import { Button } from "@/components/ui/button"
 import { getCliAppearance } from "@/features/terminal/terminal-cli"
+import { getDefaultLayout, saveLayout } from "@/lib/db"
 
 interface Pane {
   id: string
@@ -20,6 +21,7 @@ interface Pane {
   ordinal: number
   workingDir: string
   activity: TerminalActivity
+  command?: string
 }
 
 export interface TerminalPaneSummary extends TerminalActivity {
@@ -35,6 +37,18 @@ interface TerminalGridProps {
 
 type LayoutMode = "auto" | "columns" | "grid"
 
+interface PersistedTerminalLayout {
+  version: 1
+  mode: LayoutMode
+  panes: Array<{
+    label: string
+    ordinal: number
+    workingDir: string
+    resumeCommand?: string
+    cli?: string
+  }>
+}
+
 function createPane(workspacePath: string, index: number): Pane {
   return {
     id: `pane-${Date.now()}-${index}`,
@@ -45,6 +59,26 @@ function createPane(workspacePath: string, index: number): Pane {
   }
 }
 
+function restorePane(
+  workspacePath: string,
+  pane: PersistedTerminalLayout["panes"][number],
+  index: number
+): Pane {
+  const cli = pane.cli || "PowerShell"
+  return {
+    id: `pane-${Date.now()}-${index}`,
+    label: pane.label || getCliAppearance(cli).label,
+    ordinal: pane.ordinal || index,
+    workingDir: pane.workingDir || workspacePath,
+    command: pane.resumeCommand,
+    activity: {
+      status: pane.resumeCommand ? "running" : "open",
+      cli,
+      resumeCommand: pane.resumeCommand,
+    },
+  }
+}
+
 export function TerminalGrid({
   workspaceId,
   workspacePath,
@@ -52,6 +86,65 @@ export function TerminalGrid({
 }: TerminalGridProps) {
   const [panes, setPanes] = useState<Pane[]>(() => [createPane(workspacePath, 1)])
   const [layout, setLayout] = useState<LayoutMode>("auto")
+  const [layoutReady, setLayoutReady] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    setLayoutReady(false)
+
+    getDefaultLayout(workspaceId)
+      .then((saved) => {
+        if (cancelled) return
+        if (saved) {
+          const parsed = JSON.parse(saved.layoutJson) as PersistedTerminalLayout
+          if (parsed.version === 1 && Array.isArray(parsed.panes)) {
+            setLayout(parsed.mode || "auto")
+            setPanes(
+              parsed.panes.map((pane, index) =>
+                restorePane(workspacePath, pane, index + 1)
+              )
+            )
+          }
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to restore terminal layout:", error)
+      })
+      .finally(() => {
+        if (!cancelled) setLayoutReady(true)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [workspaceId, workspacePath])
+
+  useEffect(() => {
+    if (!layoutReady) return
+    const timer = window.setTimeout(() => {
+      const persisted: PersistedTerminalLayout = {
+        version: 1,
+        mode: layout,
+        panes: panes.map((pane) => ({
+          label: pane.label,
+          ordinal: pane.ordinal,
+          workingDir: pane.workingDir,
+          resumeCommand: pane.activity.resumeCommand,
+          cli: pane.activity.cli,
+        })),
+      }
+      saveLayout(
+        workspaceId,
+        "Terminal workspace",
+        JSON.stringify(persisted),
+        true
+      ).catch((error) => {
+        console.error("Failed to save terminal layout:", error)
+      })
+    }, 700)
+
+    return () => window.clearTimeout(timer)
+  }, [layout, layoutReady, panes, workspaceId])
 
   const openPane = useCallback(() => {
     setPanes((current) => {
@@ -188,6 +281,7 @@ export function TerminalGrid({
                   agentName={pane.label}
                   workingDir={pane.workingDir}
                   workspaceId={workspaceId}
+                  command={pane.command}
                   onClose={() => closePane(pane.id)}
                   onActivityChange={(activity) => updatePaneActivity(pane.id, activity)}
                   accentColor={cliAppearance.color}

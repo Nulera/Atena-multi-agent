@@ -14,6 +14,12 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
+            #[cfg(desktop)]
+            {
+                app.handle()
+                    .plugin(tauri_plugin_updater::Builder::new().build())?;
+                app.handle().plugin(tauri_plugin_process::init())?;
+            }
             if cfg!(debug_assertions) {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()
@@ -38,6 +44,7 @@ pub fn run() {
             commands::sessions::delete_session,
             commands::sessions::add_session_log,
             commands::sessions::list_session_logs,
+            commands::sessions::export_session,
             commands::settings::get_setting,
             commands::settings::set_setting,
             commands::settings::list_settings,

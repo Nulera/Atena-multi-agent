@@ -76,7 +76,7 @@ export function WorkspaceSelection({
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex h-full flex-col">
       <header className="flex h-10 items-center justify-between border-b border-[hsl(var(--border))] px-4">
         <div className="flex items-center gap-2">
           <span className="text-[hsl(var(--accent))]">$</span>

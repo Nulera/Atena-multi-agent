@@ -37,6 +37,7 @@ import { listAgents } from "@/lib/db"
 import { listProcesses } from "@/lib/pty"
 import type { Workspace, Agent } from "@/types"
 import { getCliAppearance } from "@/features/terminal/terminal-cli"
+import atenaMark from "@/assets/atena-mark.svg"
 
 interface WorkspaceViewProps {
   workspace: Workspace
@@ -158,7 +159,7 @@ export function WorkspaceView({ workspace, onBack }: WorkspaceViewProps) {
   )
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-[hsl(var(--background))]">
+    <div className="flex h-full flex-col overflow-hidden bg-[hsl(var(--background))]">
       <Topbar>
         <button
           type="button"
@@ -166,9 +167,7 @@ export function WorkspaceView({ workspace, onBack }: WorkspaceViewProps) {
           onClick={onBack}
           title="Back to workspaces"
         >
-          <span className="flex h-4 w-4 items-center justify-center border border-[hsl(var(--border-strong))] bg-[hsl(var(--foreground))] text-[8px] font-bold text-[hsl(var(--background))]">
-            A
-          </span>
+          <img src={atenaMark} alt="" className="h-4 w-4 rounded-[4px]" />
           <span className="text-[10px] font-semibold tracking-[0.14em]">ATENA</span>
         </button>
         <div className="flex min-w-0 items-center gap-1.5 px-1 text-[10px]">

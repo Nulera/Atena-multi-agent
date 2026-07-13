@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react"
 import { ThemeProvider } from "@/lib/theme"
 import { ToastProvider } from "@/components/ui/toast"
+import { WindowTitlebar } from "@/components/layout/window-titlebar"
+import { UpdateManager } from "@/components/update-manager"
 import { WorkspaceSelection } from "@/features/workspaces/workspace-selection"
 import { WorkspaceView } from "@/features/workspaces/workspace-view"
 import {
@@ -67,7 +69,7 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <p className="text-sm text-[hsl(var(--muted-foreground))]">
           Carregando...
         </p>
@@ -95,7 +97,13 @@ function App() {
   return (
     <ThemeProvider>
       <ToastProvider>
-        <AppContent />
+        <div className="flex h-screen flex-col overflow-hidden bg-[hsl(var(--background))]">
+          <WindowTitlebar />
+          <div className="min-h-0 flex-1">
+            <AppContent />
+          </div>
+        </div>
+        <UpdateManager />
       </ToastProvider>
     </ThemeProvider>
   )

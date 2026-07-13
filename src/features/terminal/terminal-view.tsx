@@ -41,6 +41,7 @@ export type TerminalStatus = "open" | "idle" | "running" | "stopped"
 export interface TerminalActivity {
   status: TerminalStatus
   cli: string
+  resumeCommand?: string
 }
 
 function commandCli(commandLine: string) {
@@ -82,6 +83,7 @@ export function TerminalView({
   const outputTailRef = useRef("")
   const currentCliRef = useRef("PowerShell")
   const currentStatusRef = useRef<TerminalStatus>("open")
+  const resumeCommandRef = useRef("")
   const inputEscapeStateRef = useRef<"none" | "escape" | "csi" | "osc">("none")
   const [isRunning, setIsRunning] = useState(false)
   const { theme } = useTheme()
@@ -95,10 +97,15 @@ export function TerminalView({
   }, [])
 
   const reportActivity = useCallback(
-    (status: TerminalStatus, cli = currentCliRef.current) => {
+    (
+      status: TerminalStatus,
+      cli = currentCliRef.current,
+      resumeCommand = resumeCommandRef.current
+    ) => {
       currentStatusRef.current = status
       currentCliRef.current = cli
-      onActivityChange?.({ status, cli })
+      resumeCommandRef.current = resumeCommand
+      onActivityChange?.({ status, cli, resumeCommand })
     },
     [onActivityChange]
   )
@@ -172,7 +179,15 @@ export function TerminalView({
     }
 
     try {
-      reportActivity(command?.trim() ? "running" : "open", command?.trim() ? commandCli(command) : "PowerShell")
+      const initialCli = command?.trim() ? commandCli(command) : "PowerShell"
+      const initialResumeCommand = /^(claude|codex|opencode)$/i.test(initialCli)
+        ? command?.trim() || initialCli.toLowerCase()
+        : ""
+      reportActivity(
+        command?.trim() ? "running" : "open",
+        initialCli,
+        initialResumeCommand
+      )
       // Always spawn an interactive shell; if command is set, it gets sent to the shell
       const info = await spawnProcess(command || "", workingDir, agentId)
       if (disposedRef.current || termInstanceRef.current !== term) {
@@ -326,7 +341,13 @@ export function TerminalView({
           }
           if (character === "\r" || character === "\n") {
             const commandLine = inputBufferRef.current.trim()
-            if (commandLine) reportActivity("running", commandCli(commandLine))
+            if (commandLine) {
+              const cli = commandCli(commandLine)
+              const resumeCommand = /^(claude|codex|opencode)$/i.test(cli)
+                ? commandLine
+                : ""
+              reportActivity("running", cli, resumeCommand)
+            }
             inputBufferRef.current = ""
           } else if (character === "\u0003") {
             inputBufferRef.current = ""

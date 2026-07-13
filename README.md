@@ -116,6 +116,24 @@ npm run tauri:build
 
 Os instaladores são gerados pelo Tauri em `src-tauri/target/release/bundle/`.
 
+### Instalação no Windows
+
+Baixe o arquivo `Atena_<versão>_x64-setup.exe` na página de
+[Releases](https://github.com/Nulera/Atena-multi-agent/releases). O instalador
+adiciona o Atena ao menu Iniciar e cria um atalho na área de trabalho.
+
+Após a aprovação do pacote no repositório comunitário do WinGet:
+
+```powershell
+winget install --id AtenaProject.Atena --exact
+```
+
+Mantenedores podem enviar a primeira versão ao WinGet executando:
+
+```powershell
+.\scripts\submit-winget.ps1 -Version 0.1.0
+```
+
 ## Comandos úteis
 
 | Comando | Ação |
@@ -149,10 +167,10 @@ Os instaladores são gerados pelo Tauri em `src-tauri/target/release/bundle/`.
 - [x] Identidade visual automática por CLI
 - [x] Sessões e logs locais
 - [x] Orquestrador multiagente
-- [ ] Restauração de processos após reiniciar o aplicativo
-- [ ] Layouts de terminal salvos por workspace
-- [ ] Exportação e compartilhamento de sessões
-- [ ] Releases assinadas e atualização automática
+- [x] Restauração segura de terminais e CLIs após reiniciar o aplicativo
+- [x] Layouts de terminal salvos por workspace
+- [x] Exportação e compartilhamento de sessões em Markdown e JSON
+- [x] Releases assinadas e atualização automática
 
 ## Contribuindo
 

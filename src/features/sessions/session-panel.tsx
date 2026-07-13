@@ -5,7 +5,9 @@ import {
   Trash2,
   Pencil,
   Clock,
+  Download,
 } from "lucide-react"
+import { save } from "@tauri-apps/plugin-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
@@ -23,6 +25,7 @@ import {
   updateSession,
   deleteSession,
   listSessionLogs,
+  exportSession,
 } from "@/lib/db"
 import { useToast } from "@/components/ui/toast"
 import type { Session, SessionLog, Agent } from "@/types"
@@ -126,6 +129,34 @@ export function SessionPanel({ workspaceId, agents }: SessionPanelProps) {
     content: log.content,
     timestamp: log.createdAt,
   })
+
+  const handleExport = useCallback(
+    async (format: "markdown" | "json") => {
+      if (!selectedSession) return
+      const safeName = (selectedSession.name || `session-${selectedSession.id.slice(0, 6)}`)
+        .replace(/[^a-z0-9-_]+/gi, "-")
+        .replace(/^-+|-+$/g, "")
+      const extension = format === "markdown" ? "md" : "json"
+      const path = await save({
+        defaultPath: `${safeName || "atena-session"}.${extension}`,
+        filters: [
+          {
+            name: format === "markdown" ? "Markdown" : "JSON",
+            extensions: [extension],
+          },
+        ],
+      })
+      if (!path) return
+
+      try {
+        await exportSession(selectedSession.id, path, format)
+        toast({ title: "session exported", description: path, variant: "success" })
+      } catch (error) {
+        toast({ title: "export failed", description: String(error), variant: "danger" })
+      }
+    },
+    [selectedSession, toast]
+  )
 
   return (
     <div className="flex h-full">
@@ -241,6 +272,26 @@ export function SessionPanel({ workspaceId, agents }: SessionPanelProps) {
                 }}
               >
                 copy
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-[10px]"
+                onClick={() => handleExport("markdown")}
+                title="Export a shareable Markdown transcript"
+              >
+                <Download className="h-3 w-3" />
+                md
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-[10px]"
+                onClick={() => handleExport("json")}
+                title="Export structured session data"
+              >
+                <Download className="h-3 w-3" />
+                json
               </Button>
             </div>
             <div className="flex-1 overflow-hidden p-1.5">

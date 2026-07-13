@@ -38,10 +38,35 @@ pub fn save_layout(
 ) -> Result<Layout, String> {
     let conn = get_conn()?;
     let now = Utc::now().to_rfc3339();
-    let id = Uuid::new_v4().to_string();
     let default = is_default.unwrap_or(false);
 
     if default {
+        let existing_id = conn
+            .query_row(
+                "SELECT id FROM layouts WHERE workspace_id = ?1 AND is_default = 1 LIMIT 1",
+                rusqlite::params![workspace_id],
+                |row| row.get::<_, String>(0),
+            )
+            .ok();
+
+        if let Some(id) = existing_id {
+            conn.execute(
+                "UPDATE layouts SET name = ?1, layout_json = ?2, updated_at = ?3 WHERE id = ?4",
+                rusqlite::params![name, layout_json, now, id],
+            )
+            .map_err(|e| e.to_string())?;
+
+            return Ok(Layout {
+                id,
+                workspace_id,
+                name,
+                layout_json,
+                is_default: true,
+                created_at: now.clone(),
+                updated_at: now,
+            });
+        }
+
         conn.execute(
             "UPDATE layouts SET is_default = 0 WHERE workspace_id = ?1",
             rusqlite::params![workspace_id],
@@ -49,6 +74,7 @@ pub fn save_layout(
         .map_err(|e| e.to_string())?;
     }
 
+    let id = Uuid::new_v4().to_string();
     conn.execute(
         "INSERT INTO layouts (id, workspace_id, name, layout_json, is_default, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6)",
         rusqlite::params![id, workspace_id, name, layout_json, default, now],

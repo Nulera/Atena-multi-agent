@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title">
+  <title id="title">Atena</title>
+  <rect x="64" y="64" width="896" height="896" rx="224" fill="#080b0a"/>
+  <path d="M512 170 812 838H674l-58-136H408l-58 136H212L512 170Zm0 286-54 126h108l-54-126Z" fill="#31e6ae"/>
+  <path d="M512 170v286l-54 126h-94L512 170Z" fill="#8fffdc" opacity=".42"/>
+  <path d="M294 838h436" stroke="#31e6ae" stroke-width="42" stroke-linecap="square"/>
+</svg>
