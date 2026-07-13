@@ -1,0 +1,132 @@
+use rusqlite::Connection;
+
+pub fn run_migrations(conn: &Connection) -> Result<(), String> {
+    let migrations: &[&str] = &[
+        // v1 — initial schema
+        r#"
+        CREATE TABLE IF NOT EXISTS workspaces (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            path TEXT NOT NULL,
+            description TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS agents (
+            id TEXT PRIMARY KEY,
+            workspace_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'custom',
+            description TEXT NOT NULL DEFAULT '',
+            base_prompt TEXT NOT NULL DEFAULT '',
+            command TEXT NOT NULL DEFAULT '',
+            working_directory TEXT NOT NULL DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'idle',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS sessions (
+            id TEXT PRIMARY KEY,
+            workspace_id TEXT NOT NULL,
+            agent_id TEXT NOT NULL,
+            name TEXT NOT NULL DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'active',
+            started_at TEXT NOT NULL,
+            ended_at TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+            FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS session_logs (
+            id TEXT PRIMARY KEY,
+            session_id TEXT NOT NULL,
+            type TEXT NOT NULL DEFAULT 'output',
+            content TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS layouts (
+            id TEXT PRIMARY KEY,
+            workspace_id TEXT NOT NULL,
+            name TEXT NOT NULL DEFAULT 'Default',
+            layout_json TEXT NOT NULL DEFAULT '{}',
+            is_default INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS settings (
+            id TEXT PRIMARY KEY,
+            key TEXT NOT NULL UNIQUE,
+            value TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_agents_workspace ON agents(workspace_id);
+        CREATE INDEX IF NOT EXISTS idx_sessions_workspace ON sessions(workspace_id);
+        CREATE INDEX IF NOT EXISTS idx_sessions_agent ON sessions(agent_id);
+        CREATE INDEX IF NOT EXISTS idx_session_logs_session ON session_logs(session_id);
+        CREATE INDEX IF NOT EXISTS idx_layouts_workspace ON layouts(workspace_id);
+        CREATE INDEX IF NOT EXISTS idx_settings_key ON settings(key);
+        "#,
+        // v2 — orchestration tables
+        r#"
+        CREATE TABLE IF NOT EXISTS orchestrations (
+            id TEXT PRIMARY KEY,
+            workspace_id TEXT NOT NULL,
+            title TEXT NOT NULL DEFAULT '',
+            user_goal TEXT NOT NULL DEFAULT '',
+            plan_json TEXT NOT NULL DEFAULT '{}',
+            status TEXT NOT NULL DEFAULT 'planning',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS orchestration_steps (
+            id TEXT PRIMARY KEY,
+            orchestration_id TEXT NOT NULL,
+            agent_id TEXT,
+            session_id TEXT,
+            title TEXT NOT NULL DEFAULT '',
+            description TEXT NOT NULL DEFAULT '',
+            order_index INTEGER NOT NULL DEFAULT 0,
+            depends_on_step_id TEXT,
+            status TEXT NOT NULL DEFAULT 'pending',
+            result_summary TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (orchestration_id) REFERENCES orchestrations(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS orchestration_events (
+            id TEXT PRIMARY KEY,
+            orchestration_id TEXT NOT NULL,
+            step_id TEXT,
+            type TEXT NOT NULL DEFAULT 'info',
+            content TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (orchestration_id) REFERENCES orchestrations(id) ON DELETE CASCADE
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_orchestrations_workspace ON orchestrations(workspace_id);
+        CREATE INDEX IF NOT EXISTS idx_orch_steps_orch ON orchestration_steps(orchestration_id);
+        CREATE INDEX IF NOT EXISTS idx_orch_events_orch ON orchestration_events(orchestration_id);
+        "#,
+    ];
+
+    for migration in migrations {
+        conn.execute_batch(migration)
+            .map_err(|e| format!("Migration failed: {}", e))?;
+    }
+
+    Ok(())
+}

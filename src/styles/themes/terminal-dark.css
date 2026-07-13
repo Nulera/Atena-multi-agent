@@ -1,0 +1,104 @@
+:root {
+  --background: 222 18% 6%;
+  --foreground: 210 20% 96%;
+
+  --panel: 222 16% 8%;
+  --panel-elevated: 222 16% 11%;
+
+  --border: 220 12% 18%;
+  --border-strong: 220 12% 26%;
+
+  --muted: 220 10% 45%;
+  --muted-foreground: 220 9% 62%;
+
+  --accent: 220 100% 64%;
+  --accent-foreground: 0 0% 100%;
+
+  --success: 145 70% 45%;
+  --warning: 38 92% 55%;
+  --danger: 0 72% 55%;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+}
+
+:root[data-theme="terminal-dark"] {
+  --background: 222 18% 6%;
+  --foreground: 210 20% 96%;
+  --panel: 222 16% 8%;
+  --panel-elevated: 222 16% 11%;
+  --border: 220 12% 18%;
+  --border-strong: 220 12% 26%;
+  --muted: 220 10% 45%;
+  --muted-foreground: 220 9% 62%;
+  --accent: 220 100% 64%;
+  --accent-foreground: 0 0% 100%;
+  --success: 145 70% 45%;
+  --warning: 38 92% 55%;
+  --danger: 0 72% 55%;
+}
+
+:root[data-theme="graphite"] {
+  --background: 220 6% 10%;
+  --foreground: 220 10% 92%;
+  --panel: 220 6% 12%;
+  --panel-elevated: 220 6% 15%;
+  --border: 220 6% 20%;
+  --border-strong: 220 6% 28%;
+  --muted: 220 6% 40%;
+  --muted-foreground: 220 6% 55%;
+  --accent: 220 10% 70%;
+  --accent-foreground: 220 6% 10%;
+  --success: 145 60% 50%;
+  --warning: 38 90% 58%;
+  --danger: 0 70% 58%;
+}
+
+:root[data-theme="midnight-blue"] {
+  --background: 225 40% 8%;
+  --foreground: 210 30% 94%;
+  --panel: 225 38% 10%;
+  --panel-elevated: 225 38% 13%;
+  --border: 225 30% 20%;
+  --border-strong: 225 30% 28%;
+  --muted: 225 25% 42%;
+  --muted-foreground: 225 22% 60%;
+  --accent: 210 100% 60%;
+  --accent-foreground: 0 0% 100%;
+  --success: 145 70% 45%;
+  --warning: 38 92% 55%;
+  --danger: 0 72% 55%;
+}
+
+:root[data-theme="synthwave"] {
+  --background: 270 30% 7%;
+  --foreground: 280 20% 94%;
+  --panel: 270 28% 10%;
+  --panel-elevated: 270 28% 13%;
+  --border: 280 20% 22%;
+  --border-strong: 280 20% 30%;
+  --muted: 280 15% 42%;
+  --muted-foreground: 280 12% 60%;
+  --accent: 300 100% 65%;
+  --accent-foreground: 0 0% 100%;
+  --success: 170 80% 50%;
+  --warning: 38 92% 55%;
+  --danger: 0 72% 55%;
+}
+
+:root[data-theme="light-minimal"] {
+  --background: 0 0% 98%;
+  --foreground: 220 20% 12%;
+  --panel: 0 0% 100%;
+  --panel-elevated: 220 15% 96%;
+  --border: 220 12% 88%;
+  --border-strong: 220 12% 75%;
+  --muted: 220 10% 55%;
+  --muted-foreground: 220 10% 42%;
+  --accent: 220 90% 55%;
+  --accent-foreground: 0 0% 100%;
+  --success: 145 60% 42%;
+  --warning: 38 90% 48%;
+  --danger: 0 70% 50%;
+}
