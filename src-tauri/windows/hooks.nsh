@@ -1,6 +1,6 @@
 !macro NSIS_HOOK_POSTINSTALL
   SetShellVarContext current
-  CreateShortCut "$DESKTOP\Atena.lnk" "$INSTDIR\Atena.exe" "" "$INSTDIR\Atena.exe" 0
+  CreateShortCut "$DESKTOP\Atena.lnk" "$INSTDIR\app.exe" "" "$INSTDIR\app.exe" 0
 !macroend
 
 !macro NSIS_HOOK_PREUNINSTALL
