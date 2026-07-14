@@ -13,22 +13,31 @@ export interface OrchestrationStep {
 }
 
 export interface OrchestrationPlan {
+  id: string
   goal: string
+  templateId?: string
   steps: OrchestrationStep[]
 }
+
+export type SquadTemplateStep = Omit<
+  OrchestrationStep,
+  "id" | "status" | "resultSummary"
+>
 
 export interface SquadTemplate {
   id: string
   name: string
   description: string
-  steps: Omit<OrchestrationStep, "id" | "status" | "resultSummary">[]
+  steps: SquadTemplateStep[]
+  builtIn?: boolean
 }
 
-export const squadTemplates: SquadTemplate[] = [
+export const defaultSquadTemplates: SquadTemplate[] = [
   {
     id: "dev",
     name: "Development Squad",
     description: "Frontend + Backend + QA + Git Review",
+    builtIn: true,
     steps: [
       {
         order: 0,
@@ -70,6 +79,7 @@ export const squadTemplates: SquadTemplate[] = [
     id: "design",
     name: "Design Squad",
     description: "UI/UX + Copy + Frontend + QA",
+    builtIn: true,
     steps: [
       {
         order: 0,
@@ -108,6 +118,7 @@ export const squadTemplates: SquadTemplate[] = [
     id: "debug",
     name: "Debug Squad",
     description: "Debugger + QA + Git Review",
+    builtIn: true,
     steps: [
       {
         order: 0,
@@ -146,6 +157,7 @@ export const squadTemplates: SquadTemplate[] = [
     id: "content",
     name: "Content Squad",
     description: "Copy + SEO + Review",
+    builtIn: true,
     steps: [
       {
         order: 0,

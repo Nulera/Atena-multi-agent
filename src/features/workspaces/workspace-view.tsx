@@ -377,7 +377,10 @@ export function WorkspaceView({ workspace, onBack }: WorkspaceViewProps) {
             />
           </div>
           {activeTab === "orchestrator" && (
-            <OrchestratorPanel workspacePath={workspace.path} />
+            <OrchestratorPanel
+              workspaceId={workspace.id}
+              workspacePath={workspace.path}
+            />
           )}
           {activeTab === "agents" && (
             <AgentPanel
