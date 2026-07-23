@@ -1,5 +1,7 @@
 use rusqlite::Connection;
 
+pub const LATEST_SCHEMA_VERSION: usize = 2;
+
 pub fn run_migrations(conn: &Connection) -> Result<(), String> {
     let migrations: &[&str] = &[
         // v1 — initial schema
@@ -123,10 +125,66 @@ pub fn run_migrations(conn: &Connection) -> Result<(), String> {
         "#,
     ];
 
-    for migration in migrations {
-        conn.execute_batch(migration)
-            .map_err(|e| format!("Migration failed: {}", e))?;
+    let current_version: usize = conn
+        .query_row("PRAGMA user_version", [], |row| row.get(0))
+        .map_err(|error| format!("Failed to read schema version: {error}"))?;
+
+    for (index, migration) in migrations.iter().enumerate().skip(current_version) {
+        let version = index + 1;
+        let transaction = conn
+            .unchecked_transaction()
+            .map_err(|error| format!("Failed to start migration {version}: {error}"))?;
+        transaction
+            .execute_batch(migration)
+            .map_err(|error| format!("Migration {version} failed: {error}"))?;
+        transaction
+            .pragma_update(None, "user_version", version)
+            .map_err(|error| format!("Failed to record migration {version}: {error}"))?;
+        transaction
+            .commit()
+            .map_err(|error| format!("Failed to commit migration {version}: {error}"))?;
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::run_migrations;
+    use rusqlite::Connection;
+
+    #[test]
+    fn records_the_latest_schema_version() {
+        let conn = Connection::open_in_memory().expect("open database");
+
+        run_migrations(&conn).expect("run migrations");
+
+        let version: i64 = conn
+            .query_row("PRAGMA user_version", [], |row| row.get(0))
+            .expect("read schema version");
+        assert_eq!(version, 2);
+    }
+
+    #[test]
+    fn preserves_existing_rows_when_run_again() {
+        let conn = Connection::open_in_memory().expect("open database");
+        run_migrations(&conn).expect("run migrations");
+        conn.execute(
+            "INSERT INTO settings (id, key, value, created_at, updated_at)
+             VALUES ('setting-1', 'theme', 'dark', 'now', 'now')",
+            [],
+        )
+        .expect("insert setting");
+
+        run_migrations(&conn).expect("rerun migrations");
+
+        let value: String = conn
+            .query_row(
+                "SELECT value FROM settings WHERE id = 'setting-1'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("read setting");
+        assert_eq!(value, "dark");
+    }
 }

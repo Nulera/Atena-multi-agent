@@ -28,7 +28,11 @@ export function WindowTitlebar() {
         data-tauri-drag-region
         className="flex min-w-0 flex-1 items-center gap-2 px-2.5"
       >
-        <img src={atenaMark} alt="" className="pointer-events-none h-4 w-4 rounded-[4px]" />
+        <img
+          src={atenaMark}
+          alt=""
+          className="pointer-events-none h-4 w-4 rounded-[4px]"
+        />
         <span className="pointer-events-none text-[9px] font-semibold tracking-[0.2em] text-[hsl(var(--foreground))]">
           ATENA
         </span>

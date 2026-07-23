@@ -1,12 +1,5 @@
 import { useState, useCallback, useEffect } from "react"
-import {
-  Bot,
-  Plus,
-  Pencil,
-  Trash2,
-  Copy,
-  Search,
-} from "lucide-react"
+import { Bot, Plus, Pencil, Trash2, Copy, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { AgentCard } from "@/components/ui/agent-card"
@@ -19,12 +12,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { AgentDialog } from "./agent-dialog"
-import {
-  listAgents,
-  createAgent,
-  updateAgent,
-  deleteAgent,
-} from "@/lib/db"
+import { listAgents, createAgent, updateAgent, deleteAgent } from "@/lib/db"
 import { useToast } from "@/components/ui/toast"
 import type { Agent } from "@/types"
 
@@ -78,7 +66,11 @@ export function AgentPanel({
           toast({ title: "agent updated", variant: "success" })
         } else {
           await createAgent(data)
-          toast({ title: "agent created", description: data.name, variant: "success" })
+          toast({
+            title: "agent created",
+            description: data.name,
+            variant: "success",
+          })
         }
         await refresh()
         setEditingAgent(null)
@@ -93,7 +85,11 @@ export function AgentPanel({
     if (!deleteConfirm) return
     try {
       await deleteAgent(deleteConfirm.id)
-      toast({ title: "agent deleted", description: deleteConfirm.name, variant: "default" })
+      toast({
+        title: "agent deleted",
+        description: deleteConfirm.name,
+        variant: "default",
+      })
       await refresh()
     } catch (err) {
       toast({ title: "error", description: String(err), variant: "danger" })
@@ -133,7 +129,9 @@ export function AgentPanel({
         <span className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
           agents
         </span>
-        <span className="text-[10px] text-[hsl(var(--muted))]">({filtered.length})</span>
+        <span className="text-[10px] text-[hsl(var(--muted))]">
+          ({filtered.length})
+        </span>
         <div className="ml-auto flex items-center gap-1.5">
           <div className="relative">
             <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-[hsl(var(--muted))]" />
@@ -187,7 +185,10 @@ export function AgentPanel({
           <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((agent) => (
               <div key={agent.id} className="group relative">
-                <AgentCard agent={agent} onClick={() => onAgentClick?.(agent)} />
+                <AgentCard
+                  agent={agent}
+                  onClick={() => onAgentClick?.(agent)}
+                />
                 <div className="absolute right-1 top-1 flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
                   <Button
                     variant="ghost"
@@ -242,7 +243,10 @@ export function AgentPanel({
         onSave={handleSave}
       />
 
-      <Dialog open={!!deleteConfirm} onOpenChange={(o) => !o && setDeleteConfirm(null)}>
+      <Dialog
+        open={!!deleteConfirm}
+        onOpenChange={(o) => !o && setDeleteConfirm(null)}
+      >
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>delete agent?</DialogTitle>
@@ -251,7 +255,11 @@ export function AgentPanel({
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="ghost" size="sm" onClick={() => setDeleteConfirm(null)}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setDeleteConfirm(null)}
+            >
               cancel
             </Button>
             <Button variant="danger" size="sm" onClick={handleDelete}>

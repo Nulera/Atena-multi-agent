@@ -15,12 +15,12 @@ const Sidebar = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
 )
 Sidebar.displayName = "Sidebar"
 
-function SidebarHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+function SidebarHeader({
+  className,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div
-      className={cn("flex h-9 items-center px-3", className)}
-      {...props}
-    />
+    <div className={cn("flex h-9 items-center px-3", className)} {...props} />
   )
 }
 
@@ -28,17 +28,15 @@ function SidebarContent({
   className,
   ...props
 }: HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div className={cn("flex-1 overflow-y-auto", className)} {...props} />
-  )
+  return <div className={cn("flex-1 overflow-y-auto", className)} {...props} />
 }
 
-function SidebarFooter({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+function SidebarFooter({
+  className,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div
-      className={cn("flex items-center gap-2 p-2", className)}
-      {...props}
-    />
+    <div className={cn("flex items-center gap-2 p-2", className)} {...props} />
   )
 }
 
@@ -61,10 +59,4 @@ function SidebarItem({
   )
 }
 
-export {
-  Sidebar,
-  SidebarHeader,
-  SidebarContent,
-  SidebarFooter,
-  SidebarItem,
-}
+export { Sidebar, SidebarHeader, SidebarContent, SidebarFooter, SidebarItem }

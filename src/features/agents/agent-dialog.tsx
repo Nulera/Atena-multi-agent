@@ -46,7 +46,8 @@ export function AgentDialog({
   const [basePrompt, setBasePrompt] = useState("")
   const [command, setCommand] = useState("")
   const [workingDirectory, setWorkingDirectory] = useState("")
-  const [selectedTemplate, setSelectedTemplate] = useState<AgentTemplate | null>(null)
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<AgentTemplate | null>(null)
 
   useEffect(() => {
     if (agent) {

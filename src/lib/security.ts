@@ -1,5 +1,3 @@
-
-
 export const destructiveCommands: string[] = [
   "rm -rf",
   "rm -fr",

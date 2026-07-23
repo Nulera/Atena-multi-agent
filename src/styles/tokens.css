@@ -1,6 +1,10 @@
 @theme {
-  --font-sans: "JetBrains Mono", "Cascadia Code", "Fira Code", ui-monospace, Consolas, monospace;
-  --font-mono: "JetBrains Mono", "Cascadia Code", "Fira Code", ui-monospace, Consolas, monospace;
+  --font-sans:
+    "JetBrains Mono", "Cascadia Code", "Fira Code", ui-monospace, Consolas,
+    monospace;
+  --font-mono:
+    "JetBrains Mono", "Cascadia Code", "Fira Code", ui-monospace, Consolas,
+    monospace;
 
   --radius-sm: 3px;
   --radius-md: 4px;

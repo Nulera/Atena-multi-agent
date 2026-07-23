@@ -12,6 +12,7 @@ import {
   onProcessOutput,
   onProcessExit,
 } from "@/lib/pty"
+import { detectCli, stripAnsi } from "@/features/terminal/terminal-domain"
 import { createSession, updateSession, addSessionLog } from "@/lib/db"
 import { useTheme } from "@/lib/theme"
 import { Button } from "@/components/ui/button"
@@ -42,21 +43,6 @@ export interface TerminalActivity {
   status: TerminalStatus
   cli: string
   resumeCommand?: string
-}
-
-function commandCli(commandLine: string) {
-  const command = commandLine.trim().replace(/^[&.]\s+/, "")
-  const knownCli = command.match(/(?:^|[^a-z0-9-])(claude(?:-code)?|claudecode|codex(?:-cli)?|openai-codex|opencode)(?=\s|$)/i)?.[1]
-  if (knownCli) {
-    const normalized = knownCli.toLowerCase()
-    if (normalized.startsWith("claude")) return "claude"
-    if (normalized.includes("codex")) return "codex"
-    return "opencode"
-  }
-  const firstToken = command.match(/^(?:"([^"]+)"|'([^']+)'|(\S+))/)
-  const executable = firstToken?.[1] || firstToken?.[2] || firstToken?.[3]
-  if (!executable) return "PowerShell"
-  return executable.split(/[\\/]/).pop()?.replace(/\.(exe|cmd|bat|ps1)$/i, "") || "PowerShell"
 }
 
 export function TerminalView({
@@ -179,7 +165,7 @@ export function TerminalView({
     }
 
     try {
-      const initialCli = command?.trim() ? commandCli(command) : "PowerShell"
+      const initialCli = command?.trim() ? detectCli(command) : "PowerShell"
       const initialResumeCommand = /^(claude|codex|opencode)$/i.test(initialCli)
         ? command?.trim() || initialCli.toLowerCase()
         : ""
@@ -218,13 +204,19 @@ export function TerminalView({
       const unlistenOutput = await onProcessOutput(info.id, (data) => {
         if (disposedRef.current) return
         term.write(data)
-        const plainOutput = data.replace(/\x1b\[[0-?]*[ -\/]*[@-~]/g, "")
-        outputTailRef.current = `${outputTailRef.current}${plainOutput}`.slice(-500)
-        const hasKnownInteractiveCli = /^(claude|codex|opencode)$/i.test(currentCliRef.current)
+        const plainOutput = stripAnsi(data)
+        outputTailRef.current = `${outputTailRef.current}${plainOutput}`.slice(
+          -500
+        )
+        const hasKnownInteractiveCli = /^(claude|codex|opencode)$/i.test(
+          currentCliRef.current
+        )
         if (!hasKnownInteractiveCli) {
           if (/claude\s+code/i.test(outputTailRef.current)) {
             reportActivity("running", "claude")
-          } else if (/(?:openai\s+codex|codex\s+cli)/i.test(outputTailRef.current)) {
+          } else if (
+            /(?:openai\s+codex|codex\s+cli)/i.test(outputTailRef.current)
+          ) {
             reportActivity("running", "codex")
           } else if (/\bopencode\b/i.test(outputTailRef.current)) {
             reportActivity("running", "opencode")
@@ -246,7 +238,9 @@ export function TerminalView({
         setIsRunning(false)
         reportActivity("stopped")
         if (sessionIdRef.current) {
-          updateSession(sessionIdRef.current, { status: "finished" }).catch(() => {})
+          updateSession(sessionIdRef.current, { status: "finished" }).catch(
+            () => {}
+          )
         }
       })
 
@@ -256,14 +250,13 @@ export function TerminalView({
       if (disposedRef.current || termInstanceRef.current !== term) return
       if (attached.scrollback) {
         term.write(attached.scrollback)
-        const plainScrollback = attached.scrollback.replace(
-          /\x1b\[[0-?]*[ -\/]*[@-~]/g,
-          ""
-        )
+        const plainScrollback = stripAnsi(attached.scrollback)
         outputTailRef.current = plainScrollback.slice(-500)
         if (/claude\s+code/i.test(outputTailRef.current)) {
           reportActivity("running", "claude")
-        } else if (/(?:openai\s+codex|codex\s+cli)/i.test(outputTailRef.current)) {
+        } else if (
+          /(?:openai\s+codex|codex\s+cli)/i.test(outputTailRef.current)
+        ) {
           reportActivity("running", "codex")
         } else if (/\bopencode\b/i.test(outputTailRef.current)) {
           reportActivity("running", "opencode")
@@ -278,11 +271,21 @@ export function TerminalView({
         reportActivity("stopped")
       }
       if (sessionIdRef.current) {
-        addSessionLog(sessionIdRef.current, "error", String(err)).catch(() => {})
+        addSessionLog(sessionIdRef.current, "error", String(err)).catch(
+          () => {}
+        )
         updateSession(sessionIdRef.current, { status: "error" }).catch(() => {})
       }
     }
-  }, [command, workingDir, agentId, workspaceId, agentName, focusTerminal, reportActivity])
+  }, [
+    command,
+    workingDir,
+    agentId,
+    workspaceId,
+    agentName,
+    focusTerminal,
+    reportActivity,
+  ])
 
   // Initialize terminal + auto-start shell
   useEffect(() => {
@@ -342,7 +345,7 @@ export function TerminalView({
           if (character === "\r" || character === "\n") {
             const commandLine = inputBufferRef.current.trim()
             if (commandLine) {
-              const cli = commandCli(commandLine)
+              const cli = detectCli(commandLine)
               const resumeCommand = /^(claude|codex|opencode)$/i.test(cli)
                 ? commandLine
                 : ""
@@ -367,7 +370,9 @@ export function TerminalView({
           addSessionLog(sessionIdRef.current, "command", data).catch(() => {})
         }
       } else {
-        pendingInputRef.current = `${pendingInputRef.current}${data}`.slice(-8192)
+        pendingInputRef.current = `${pendingInputRef.current}${data}`.slice(
+          -8192
+        )
       }
     })
 
@@ -413,11 +418,9 @@ export function TerminalView({
       fitRef.current?.fit()
       const terminal = termInstanceRef.current
       if (terminal && processIdRef.current) {
-        resizeProcess(
-          processIdRef.current,
-          terminal.rows,
-          terminal.cols
-        ).catch(() => {})
+        resizeProcess(processIdRef.current, terminal.rows, terminal.cols).catch(
+          () => {}
+        )
       }
     }
     const observer = new ResizeObserver(handleResize)
@@ -439,7 +442,9 @@ export function TerminalView({
         termInstanceRef.current?.write("\r\n\x1b[33m[killed]\x1b[0m\r\n")
       }
       if (sessionIdRef.current) {
-        updateSession(sessionIdRef.current, { status: "stopped" }).catch(() => {})
+        updateSession(sessionIdRef.current, { status: "stopped" }).catch(
+          () => {}
+        )
       }
     }
   }, [reportActivity])
@@ -480,10 +485,18 @@ export function TerminalView({
         style={{ boxShadow: `inset 2px 0 0 ${accentColor}` }}
       >
         <div className="flex h-full min-w-32 items-center gap-1.5 border-r border-[hsl(var(--border))] px-2">
-          <span className="flex h-5 w-5 items-center justify-center rounded-full text-white shadow-sm" style={{ backgroundColor: accentColor }}>
+          <span
+            className="flex h-5 w-5 items-center justify-center rounded-full text-white shadow-sm"
+            style={{ backgroundColor: accentColor }}
+          >
             {cliIcon ?? <TerminalIcon className="h-3.5 w-3.5" />}
           </span>
-          <span className="text-[10px] font-semibold" style={{ color: accentColor }}>{agentName}</span>
+          <span
+            className="text-[10px] font-semibold"
+            style={{ color: accentColor }}
+          >
+            {agentName}
+          </span>
           <span
             className={`h-1.5 w-1.5 ${
               isRunning ? "bg-[hsl(var(--success))]" : "bg-[hsl(var(--muted))]"

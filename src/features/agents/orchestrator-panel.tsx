@@ -28,6 +28,11 @@ import {
 } from "./orchestrator-types"
 import { useToast } from "@/components/ui/toast"
 import { spawnProcess, killProcess } from "@/lib/pty"
+import {
+  clearStepProcess,
+  processIdForStep,
+  withStepProcess,
+} from "./orchestrator-domain"
 
 interface OrchestratorPanelProps {
   workspaceId: string
@@ -40,7 +45,10 @@ function createId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
-function instantiateTemplate(template: SquadTemplate, offset = 0): OrchestrationStep[] {
+function instantiateTemplate(
+  template: SquadTemplate,
+  offset = 0
+): OrchestrationStep[] {
   const orderMap = new Map(
     template.steps.map((step, index) => [step.order, offset + index])
   )
@@ -96,7 +104,8 @@ export function OrchestratorPanel({
 }: OrchestratorPanelProps) {
   const [goal, setGoal] = useState("")
   const [plan, setPlan] = useState<OrchestrationPlan | null>(null)
-  const [selectedTemplate, setSelectedTemplate] = useState<SquadTemplate | null>(null)
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<SquadTemplate | null>(null)
   const [customTemplates, setCustomTemplates] = useState<SquadTemplate[]>([])
   const [showSquads, setShowSquads] = useState(false)
   const [showStepForm, setShowStepForm] = useState(false)
@@ -126,8 +135,10 @@ export function OrchestratorPanel({
     }
   }, [])
 
-  const runningCount = plan?.steps.filter((s) => s.status === "running").length ?? 0
-  const doneCount = plan?.steps.filter((s) => s.status === "completed").length ?? 0
+  const runningCount =
+    plan?.steps.filter((s) => s.status === "running").length ?? 0
+  const doneCount =
+    plan?.steps.filter((s) => s.status === "completed").length ?? 0
   const totalCount = plan?.steps.length ?? 0
 
   const generatePlan = useCallback(() => {
@@ -140,7 +151,9 @@ export function OrchestratorPanel({
       steps,
     })
     toast({
-      title: selectedTemplate ? "plano criado com squad" : "plano aberto criado",
+      title: selectedTemplate
+        ? "plano criado com squad"
+        : "plano aberto criado",
       description: selectedTemplate
         ? `${steps.length} etapas`
         : "defina o squad conforme o trabalho evoluir",
@@ -229,7 +242,9 @@ export function OrchestratorPanel({
 
   const deleteTemplate = useCallback(
     (templateId: string) => {
-      const next = customTemplates.filter((template) => template.id !== templateId)
+      const next = customTemplates.filter(
+        (template) => template.id !== templateId
+      )
       setCustomTemplates(next)
       localStorage.setItem(customTemplatesKey, JSON.stringify(next))
       if (selectedTemplate?.id === templateId) setSelectedTemplate(null)
@@ -281,14 +296,21 @@ export function OrchestratorPanel({
       const command = `${step.cliTool} "${fullPrompt.replace(/"/g, '\\"')}"`
 
       try {
-        await spawnProcess(command, workspacePath, step.id)
+        const process = await spawnProcess(command, workspacePath, step.id)
+        setPlan((current) =>
+          current ? withStepProcess(current, step.id, process.id) : current
+        )
         toast({
           title: `step ${step.order + 1} started`,
           description: `${cliToolLabels[step.cliTool]} → ${step.title}`,
           variant: "success",
         })
       } catch (err) {
-        toast({ title: "failed to start", description: String(err), variant: "danger" })
+        toast({
+          title: "failed to start",
+          description: String(err),
+          variant: "danger",
+        })
         setPlan((prev) => {
           if (!prev) return prev
           return {
@@ -313,9 +335,7 @@ export function OrchestratorPanel({
     setPlan((prev) => {
       if (!prev) return prev
       const completedSteps = prev.steps.map((step) =>
-        step.id === stepId
-          ? { ...step, status: "completed" as const }
-          : step
+        step.id === stepId ? { ...step, status: "completed" as const } : step
       )
       return {
         ...prev,
@@ -339,22 +359,26 @@ export function OrchestratorPanel({
 
   const stopStep = useCallback(
     async (stepId: string) => {
+      const processId = processIdForStep(plan, stepId)
+      if (!processId) {
+        toast({
+          title: "error",
+          description: "processo da etapa não encontrado",
+          variant: "danger",
+        })
+        return
+      }
       try {
-        await killProcess(stepId)
+        await killProcess(processId)
         setPlan((prev) => {
           if (!prev) return prev
-          return {
-            ...prev,
-            steps: prev.steps.map((s) =>
-              s.id === stepId ? { ...s, status: "pending" } : s
-            ),
-          }
+          return clearStepProcess(prev, stepId)
         })
       } catch (err) {
         toast({ title: "error", description: String(err), variant: "danger" })
       }
     },
-    [toast]
+    [plan, toast]
   )
 
   const resetPlan = useCallback(() => {
@@ -374,13 +398,20 @@ export function OrchestratorPanel({
         <span className="text-xs font-medium">orquestrador</span>
         {plan && (
           <div className="flex items-center gap-3 text-[10px]">
-            <span className="text-[hsl(var(--accent))]">{runningCount} running</span>
+            <span className="text-[hsl(var(--accent))]">
+              {runningCount} running
+            </span>
             <span className="text-[hsl(var(--success))]">{doneCount} done</span>
             <span className="text-[hsl(var(--muted))]">{totalCount} total</span>
           </div>
         )}
         {plan && (
-          <Button variant="ghost" size="sm" className="ml-auto h-6 text-[10px]" onClick={resetPlan}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ml-auto h-6 text-[10px]"
+            onClick={resetPlan}
+          >
             <RefreshCw className="h-2.5 w-2.5" />
             reset
           </Button>
@@ -406,7 +437,8 @@ export function OrchestratorPanel({
 
             <div className="space-y-1.5">
               <label className="text-[10px] uppercase tracking-wider text-[hsl(var(--muted))]">
-                estrutura inicial <span className="normal-case tracking-normal">(opcional)</span>
+                estrutura inicial{" "}
+                <span className="normal-case tracking-normal">(opcional)</span>
               </label>
               <div className="grid gap-1.5 sm:grid-cols-2">
                 <button
@@ -424,7 +456,8 @@ export function OrchestratorPanel({
                     <p className="text-xs font-medium">Plano aberto</p>
                   </div>
                   <p className="mt-0.5 text-[10px] text-[hsl(var(--muted))]">
-                    Comece sem squad e adicione agentes conforme o trabalho evoluir.
+                    Comece sem squad e adicione agentes conforme o trabalho
+                    evoluir.
                   </p>
                 </button>
                 {squadTemplates.map((t) => (
@@ -491,7 +524,9 @@ export function OrchestratorPanel({
               className="w-full"
             >
               <Plus className="h-3.5 w-3.5" />
-              {selectedTemplate ? "criar plano com squad" : "criar plano aberto"}
+              {selectedTemplate
+                ? "criar plano com squad"
+                : "criar plano aberto"}
             </Button>
           </div>
         ) : (
@@ -506,7 +541,9 @@ export function OrchestratorPanel({
                       pedido
                     </p>
                     <span className="border border-[hsl(var(--border))] px-1.5 py-0.5 text-[8px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
-                      {plan.templateId ? "template aplicado" : "squad em definição"}
+                      {plan.templateId
+                        ? "template aplicado"
+                        : "squad em definição"}
                     </span>
                   </div>
                   <p className="mt-0.5 text-xs">{plan.goal}</p>
@@ -556,9 +593,12 @@ export function OrchestratorPanel({
             {showStepForm && (
               <div className="border border-[hsl(var(--accent)/0.35)] bg-[hsl(var(--panel))] p-3">
                 <div className="mb-2">
-                  <p className="text-xs font-medium">Adicionar agente ao plano</p>
+                  <p className="text-xs font-medium">
+                    Adicionar agente ao plano
+                  </p>
                   <p className="text-[10px] text-[hsl(var(--muted))]">
-                    A nova etapa dependerá da etapa anterior. O restante do squad pode ser definido depois.
+                    A nova etapa dependerá da etapa anterior. O restante do
+                    squad pode ser definido depois.
                   </p>
                 </div>
                 <div className="grid gap-2 sm:grid-cols-[1fr_120px]">
@@ -570,7 +610,9 @@ export function OrchestratorPanel({
                   <Select
                     className="h-7 text-xs"
                     value={stepTool}
-                    onChange={(event) => setStepTool(event.target.value as CliTool)}
+                    onChange={(event) =>
+                      setStepTool(event.target.value as CliTool)
+                    }
                   >
                     {Object.entries(cliToolLabels).map(([value, label]) => (
                       <option key={value} value={value}>
@@ -592,7 +634,11 @@ export function OrchestratorPanel({
                   onChange={(event) => setStepPrompt(event.target.value)}
                 />
                 <div className="mt-2 flex justify-end gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => setShowStepForm(false)}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowStepForm(false)}
+                  >
                     cancelar
                   </Button>
                   <Button
@@ -618,7 +664,9 @@ export function OrchestratorPanel({
                   >
                     <div className="flex items-center gap-2">
                       <Layers3 className="h-3 w-3 text-[hsl(var(--accent))]" />
-                      <span className="text-xs font-medium">{template.name}</span>
+                      <span className="text-xs font-medium">
+                        {template.name}
+                      </span>
                       <span className="ml-auto text-[9px] text-[hsl(var(--muted))]">
                         {template.steps.length} etapas
                       </span>
@@ -633,9 +681,12 @@ export function OrchestratorPanel({
 
             {showTemplateForm && (
               <div className="border border-[hsl(var(--border))] bg-[hsl(var(--panel))] p-3">
-                <p className="text-xs font-medium">Salvar composição como template</p>
+                <p className="text-xs font-medium">
+                  Salvar composição como template
+                </p>
                 <p className="mb-2 text-[10px] text-[hsl(var(--muted))]">
-                  A ordem, os papéis, as ferramentas e as dependências serão reutilizados.
+                  A ordem, os papéis, as ferramentas e as dependências serão
+                  reutilizados.
                 </p>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <Input
@@ -646,11 +697,17 @@ export function OrchestratorPanel({
                   <Input
                     placeholder="quando usar este template"
                     value={templateDescription}
-                    onChange={(event) => setTemplateDescription(event.target.value)}
+                    onChange={(event) =>
+                      setTemplateDescription(event.target.value)
+                    }
                   />
                 </div>
                 <div className="mt-2 flex justify-end gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => setShowTemplateForm(false)}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowTemplateForm(false)}
+                  >
                     cancelar
                   </Button>
                   <Button
@@ -673,9 +730,12 @@ export function OrchestratorPanel({
                 className="flex w-full flex-col items-center border border-dashed border-[hsl(var(--border-strong))] px-4 py-9 text-center transition-colors hover:border-[hsl(var(--accent)/0.7)] hover:bg-[hsl(var(--accent)/0.03)]"
               >
                 <Plus className="h-5 w-5 text-[hsl(var(--accent))]" />
-                <span className="mt-2 text-xs font-medium">Definir o primeiro agente</span>
+                <span className="mt-2 text-xs font-medium">
+                  Definir o primeiro agente
+                </span>
                 <span className="mt-1 text-[10px] text-[hsl(var(--muted))]">
-                  O plano está aberto. Adicione apenas o papel necessário para começar.
+                  O plano está aberto. Adicione apenas o papel necessário para
+                  começar.
                 </span>
               </button>
             )}
@@ -699,8 +759,8 @@ export function OrchestratorPanel({
                     isRunning
                       ? "border-[hsl(var(--accent)/0.4)] bg-[hsl(var(--accent)/0.04)]"
                       : step.status === "completed"
-                      ? "border-[hsl(var(--success)/0.2)] bg-[hsl(var(--panel))]"
-                      : "border-[hsl(var(--border))] bg-[hsl(var(--panel))]"
+                        ? "border-[hsl(var(--success)/0.2)] bg-[hsl(var(--panel))]"
+                        : "border-[hsl(var(--border))] bg-[hsl(var(--panel))]"
                   )}
                 >
                   <div className="flex items-center gap-2">
@@ -711,8 +771,8 @@ export function OrchestratorPanel({
                         step.status === "completed"
                           ? "text-[hsl(var(--success))]"
                           : isRunning
-                          ? "text-[hsl(var(--accent))]"
-                          : "text-[hsl(var(--muted))]"
+                            ? "text-[hsl(var(--accent))]"
+                            : "text-[hsl(var(--muted))]"
                       )}
                     >
                       {step.status === "completed" ? (

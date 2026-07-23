@@ -41,12 +41,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const icons: Record<ToastVariant, ReactNode> = {
     default: <Info className="h-4 w-4 text-[hsl(var(--accent))]" />,
-    success: (
-      <CheckCircle2 className="h-4 w-4 text-[hsl(var(--success))]" />
-    ),
-    warning: (
-      <AlertCircle className="h-4 w-4 text-[hsl(var(--warning))]" />
-    ),
+    success: <CheckCircle2 className="h-4 w-4 text-[hsl(var(--success))]" />,
+    warning: <AlertCircle className="h-4 w-4 text-[hsl(var(--warning))]" />,
     danger: <AlertCircle className="h-4 w-4 text-[hsl(var(--danger))]" />,
   }
 

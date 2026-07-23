@@ -1,12 +1,6 @@
 import type { AgentStatus } from "@/types"
 import { Badge, type BadgeProps } from "@/components/ui/badge"
-import {
-  Circle,
-  Play,
-  Pause,
-  AlertCircle,
-  CheckCircle2,
-} from "lucide-react"
+import { Circle, Play, Pause, AlertCircle, CheckCircle2 } from "lucide-react"
 
 interface StatusBadgeProps {
   status: AgentStatus

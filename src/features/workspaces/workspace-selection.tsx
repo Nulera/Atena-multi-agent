@@ -94,7 +94,8 @@ export function WorkspaceSelection({
         <div className="w-full max-w-2xl space-y-4">
           <div className="space-y-1">
             <h1 className="text-sm font-medium">
-              <span className="text-[hsl(var(--accent))]">{'>'}</span> select workspace
+              <span className="text-[hsl(var(--accent))]">{">"}</span> select
+              workspace
             </h1>
             <p className="text-[11px] text-[hsl(var(--muted))]">
               organize projects, agents and sessions locally
@@ -111,7 +112,11 @@ export function WorkspaceSelection({
                 className="pl-8"
               />
             </div>
-            <Button variant="default" size="md" onClick={() => setShowCreate(!showCreate)}>
+            <Button
+              variant="default"
+              size="md"
+              onClick={() => setShowCreate(!showCreate)}
+            >
               <FolderPlus className="h-3.5 w-3.5" />
               new
             </Button>
@@ -120,7 +125,9 @@ export function WorkspaceSelection({
           {showCreate && (
             <div className="space-y-2.5 rounded-[var(--radius-sm)] border border-[hsl(var(--border))] bg-[hsl(var(--panel))] p-3">
               <div className="space-y-1">
-                <label className="text-[10px] text-[hsl(var(--muted))]">name</label>
+                <label className="text-[10px] text-[hsl(var(--muted))]">
+                  name
+                </label>
                 <Input
                   placeholder="my-project"
                   value={name}
@@ -128,7 +135,9 @@ export function WorkspaceSelection({
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] text-[hsl(var(--muted))]">path</label>
+                <label className="text-[10px] text-[hsl(var(--muted))]">
+                  path
+                </label>
                 <div className="flex gap-1.5">
                   <Input
                     placeholder="C:\projetos\meu-projeto"
@@ -152,7 +161,9 @@ export function WorkspaceSelection({
                   </Button>
                 </div>
                 {pathChecking && (
-                  <p className="text-[10px] text-[hsl(var(--muted))]">checking...</p>
+                  <p className="text-[10px] text-[hsl(var(--muted))]">
+                    checking...
+                  </p>
                 )}
                 {pathValid === true && (
                   <p className="flex items-center gap-1 text-[10px] text-[hsl(var(--success))]">
@@ -166,7 +177,9 @@ export function WorkspaceSelection({
                 )}
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] text-[hsl(var(--muted))]">description</label>
+                <label className="text-[10px] text-[hsl(var(--muted))]">
+                  description
+                </label>
                 <Input
                   placeholder="optional"
                   value={description}
@@ -174,10 +187,19 @@ export function WorkspaceSelection({
                 />
               </div>
               <div className="flex justify-end gap-1.5 pt-1">
-                <Button variant="ghost" size="sm" onClick={() => setShowCreate(false)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowCreate(false)}
+                >
                   cancel
                 </Button>
-                <Button variant="default" size="sm" onClick={handleCreate} disabled={!name.trim() || !path.trim() || !pathValid}>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleCreate}
+                  disabled={!name.trim() || !path.trim() || !pathValid}
+                >
                   create
                 </Button>
               </div>
@@ -188,13 +210,20 @@ export function WorkspaceSelection({
             <div className="flex flex-col items-center gap-2 rounded-[var(--radius-sm)] border border-dashed border-[hsl(var(--border))] p-8 text-center">
               <Cpu className="h-6 w-6 text-[hsl(var(--muted))] opacity-40" />
               <div>
-                <p className="text-xs text-[hsl(var(--foreground))]">no workspaces found</p>
+                <p className="text-xs text-[hsl(var(--foreground))]">
+                  no workspaces found
+                </p>
                 <p className="mt-0.5 text-[10px] text-[hsl(var(--muted))]">
                   create your first workspace to get started
                 </p>
               </div>
               {!showCreate && (
-                <Button variant="default" size="sm" onClick={() => setShowCreate(true)} className="mt-1">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => setShowCreate(true)}
+                  className="mt-1"
+                >
                   <FolderPlus className="h-3.5 w-3.5" />
                   create workspace
                 </Button>
@@ -210,8 +239,12 @@ export function WorkspaceSelection({
                 >
                   <FolderOpen className="h-3.5 w-3.5 shrink-0 text-[hsl(var(--accent))]" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-medium">{workspace.name}</p>
-                    <p className="truncate text-[10px] text-[hsl(var(--muted))]">{workspace.path}</p>
+                    <p className="truncate text-xs font-medium">
+                      {workspace.name}
+                    </p>
+                    <p className="truncate text-[10px] text-[hsl(var(--muted))]">
+                      {workspace.path}
+                    </p>
                   </div>
                   <Button
                     variant="ghost"

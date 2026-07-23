@@ -1,5 +1,5 @@
-import { invoke } from "@tauri-apps/api/core"
+import { invokeCommand } from "@/lib/tauri-command"
 
 export async function ping(): Promise<string> {
-  return await invoke<string>("ping")
+  return await invokeCommand<string>("ping", undefined, "app.ping")
 }

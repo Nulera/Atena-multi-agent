@@ -1,8 +1,4 @@
-import {
-  Group,
-  Panel,
-  Separator,
-} from "react-resizable-panels"
+import { Group, Panel, Separator } from "react-resizable-panels"
 import { AgentPanel } from "@/features/agents/agent-panel"
 import { TerminalPanel } from "@/features/terminal/terminal-panel"
 import { SessionPanel } from "@/features/sessions/session-panel"

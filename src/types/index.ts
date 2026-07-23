@@ -1,9 +1,4 @@
-export type AgentStatus =
-  | "idle"
-  | "running"
-  | "paused"
-  | "error"
-  | "finished"
+export type AgentStatus = "idle" | "running" | "paused" | "error" | "finished"
 
 export type AgentRole =
   | "frontend"

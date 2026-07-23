@@ -30,9 +30,7 @@ function EmptyState({
           {title}
         </p>
         {description && (
-          <p className="text-[11px] text-[hsl(var(--muted))]">
-            {description}
-          </p>
+          <p className="text-[11px] text-[hsl(var(--muted))]">{description}</p>
         )}
       </div>
       {action && <div className="mt-1">{action}</div>}
