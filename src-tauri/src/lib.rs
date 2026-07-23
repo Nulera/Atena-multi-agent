@@ -1,12 +1,18 @@
 pub mod commands;
 pub mod db;
 
-use db::{connection::init_db, migrations::run_migrations};
+use db::{
+    connection::{backup_database, get_db_path, init_db, schema_version},
+    migrations::{run_migrations, LATEST_SCHEMA_VERSION},
+};
 use tauri::Builder;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let conn = init_db().expect("Failed to initialize database");
+    let current_version = schema_version(&conn).expect("Failed to read database version");
+    backup_database(&get_db_path(), current_version, LATEST_SCHEMA_VERSION)
+        .expect("Failed to back up database before migration");
     run_migrations(&conn).expect("Failed to run migrations");
     drop(conn);
 

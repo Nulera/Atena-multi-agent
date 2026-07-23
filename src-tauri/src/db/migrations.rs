@@ -1,5 +1,7 @@
 use rusqlite::Connection;
 
+pub const LATEST_SCHEMA_VERSION: usize = 2;
+
 pub fn run_migrations(conn: &Connection) -> Result<(), String> {
     let migrations: &[&str] = &[
         // v1 — initial schema

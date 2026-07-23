@@ -29,7 +29,11 @@ pub fn list_workspaces() -> Result<Vec<Workspace>, String> {
 }
 
 #[tauri::command]
-pub fn create_workspace(name: String, path: String, description: String) -> Result<Workspace, String> {
+pub fn create_workspace(
+    name: String,
+    path: String,
+    description: String,
+) -> Result<Workspace, String> {
     let conn = get_conn()?;
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
@@ -51,7 +55,12 @@ pub fn create_workspace(name: String, path: String, description: String) -> Resu
 }
 
 #[tauri::command]
-pub fn update_workspace(id: String, name: Option<String>, path: Option<String>, description: Option<String>) -> Result<(), String> {
+pub fn update_workspace(
+    id: String,
+    name: Option<String>,
+    path: Option<String>,
+    description: Option<String>,
+) -> Result<(), String> {
     let conn = get_conn()?;
     let now = Utc::now().to_rfc3339();
 
@@ -90,7 +99,10 @@ pub fn update_workspace(id: String, name: Option<String>, path: Option<String>, 
 #[tauri::command]
 pub fn delete_workspace(id: String) -> Result<(), String> {
     let conn = get_conn()?;
-    conn.execute("DELETE FROM workspaces WHERE id = ?1", rusqlite::params![id])
-        .map_err(|e| e.to_string())?;
+    conn.execute(
+        "DELETE FROM workspaces WHERE id = ?1",
+        rusqlite::params![id],
+    )
+    .map_err(|e| e.to_string())?;
     Ok(())
 }
