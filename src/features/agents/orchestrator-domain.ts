@@ -1,7 +1,4 @@
-import type {
-  OrchestrationPlan,
-  OrchestrationStep,
-} from "./orchestrator-types"
+import type { OrchestrationPlan, OrchestrationStep } from "./orchestrator-types"
 
 function updateStep(
   plan: OrchestrationPlan,
@@ -10,9 +7,7 @@ function updateStep(
 ): OrchestrationPlan {
   return {
     ...plan,
-    steps: plan.steps.map((step) =>
-      step.id === stepId ? update(step) : step
-    ),
+    steps: plan.steps.map((step) => (step.id === stepId ? update(step) : step)),
   }
 }
 

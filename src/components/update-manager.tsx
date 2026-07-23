@@ -46,7 +46,8 @@ export function UpdateManager() {
           setProgress(total ? 0 : null)
         } else if (event.event === "Progress") {
           downloaded += event.data.chunkLength
-          if (total) setProgress(Math.min(100, Math.round((downloaded / total) * 100)))
+          if (total)
+            setProgress(Math.min(100, Math.round((downloaded / total) * 100)))
         } else if (event.event === "Finished") {
           setProgress(100)
         }
@@ -95,7 +96,9 @@ export function UpdateManager() {
               />
             </div>
             <p className="text-[10px] text-[hsl(var(--muted-foreground))]">
-              {progress === null ? "downloading..." : `downloading... ${progress}%`}
+              {progress === null
+                ? "downloading..."
+                : `downloading... ${progress}%`}
             </p>
           </div>
         )}

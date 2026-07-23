@@ -71,7 +71,8 @@ export const defaultSquadTemplates: SquadTemplate[] = [
         agentRole: "git-reviewer",
         cliTool: "opencode",
         title: "Git review",
-        prompt: "Review all changes made. Check diff, code quality, and suggest improvements.",
+        prompt:
+          "Review all changes made. Check diff, code quality, and suggest improvements.",
         dependsOn: [2],
       },
     ],
@@ -87,7 +88,8 @@ export const defaultSquadTemplates: SquadTemplate[] = [
         agentRole: "ui-ux",
         cliTool: "claude",
         title: "Design layout",
-        prompt: "Design the visual layout, hierarchy, and UX flow for this task.",
+        prompt:
+          "Design the visual layout, hierarchy, and UX flow for this task.",
       },
       {
         order: 1,
@@ -110,7 +112,8 @@ export const defaultSquadTemplates: SquadTemplate[] = [
         agentRole: "qa",
         cliTool: "opencode",
         title: "QA review",
-        prompt: "Review the implementation for responsiveness and accessibility.",
+        prompt:
+          "Review the implementation for responsiveness and accessibility.",
         dependsOn: [2],
       },
     ],
@@ -126,14 +129,16 @@ export const defaultSquadTemplates: SquadTemplate[] = [
         agentRole: "backend",
         cliTool: "codex",
         title: "Investigate bug",
-        prompt: "Investigate the reported issue. Find the root cause and propose a fix.",
+        prompt:
+          "Investigate the reported issue. Find the root cause and propose a fix.",
       },
       {
         order: 1,
         agentRole: "qa",
         cliTool: "claude",
         title: "Write reproduction test",
-        prompt: "Write a test that reproduces the bug before the fix is applied.",
+        prompt:
+          "Write a test that reproduces the bug before the fix is applied.",
         dependsOn: [0],
       },
       {
@@ -141,7 +146,8 @@ export const defaultSquadTemplates: SquadTemplate[] = [
         agentRole: "backend",
         cliTool: "codex",
         title: "Apply fix",
-        prompt: "Apply the fix for the bug. Ensure the reproduction test now passes.",
+        prompt:
+          "Apply the fix for the bug. Ensure the reproduction test now passes.",
         dependsOn: [0, 1],
       },
       {
@@ -172,7 +178,8 @@ export const defaultSquadTemplates: SquadTemplate[] = [
         agentRole: "copywriter",
         cliTool: "opencode",
         title: "SEO optimize",
-        prompt: "Optimize the content for search engines. Add meta tags suggestions.",
+        prompt:
+          "Optimize the content for search engines. Add meta tags suggestions.",
         dependsOn: [0],
       },
       {

@@ -17,8 +17,7 @@ const badgeVariants = cva(
           "border-[hsl(var(--warning)/0.3)] bg-transparent text-[hsl(var(--warning))]",
         danger:
           "border-[hsl(var(--danger)/0.3)] bg-transparent text-[hsl(var(--danger))]",
-        muted:
-          "border-transparent bg-transparent text-[hsl(var(--muted))]",
+        muted: "border-transparent bg-transparent text-[hsl(var(--muted))]",
         outline:
           "border-[hsl(var(--border-strong))] text-[hsl(var(--muted-foreground))]",
       },
@@ -30,8 +29,7 @@ const badgeVariants = cva(
 )
 
 export interface BadgeProps
-  extends HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof badgeVariants> {}
+  extends HTMLAttributes<HTMLDivElement>, VariantProps<typeof badgeVariants> {}
 
 function Badge({ className, variant, ...props }: BadgeProps) {
   return (

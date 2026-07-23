@@ -10,9 +10,7 @@ import type { Workspace } from "@/types"
 
 function AppContent() {
   const { workspaces, loading, create, remove, refresh } = useWorkspaces()
-  const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(
-    null
-  )
+  const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null)
   const handleCreate = useCallback(
     async (name: string, path: string, description: string) => {
       try {
@@ -55,9 +53,7 @@ function AppContent() {
   }
 
   if (activeWorkspace) {
-    return (
-      <WorkspaceView workspace={activeWorkspace} onBack={handleBack} />
-    )
+    return <WorkspaceView workspace={activeWorkspace} onBack={handleBack} />
   }
 
   return (

@@ -61,11 +61,7 @@ export async function listProcesses(): Promise<ProcessInfo[]> {
 }
 
 export async function getScrollback(id: string): Promise<string> {
-  return await invokeCommand<string>(
-    "get_scrollback",
-    { id },
-    "pty.scrollback"
-  )
+  return await invokeCommand<string>("get_scrollback", { id }, "pty.scrollback")
 }
 
 export function onProcessOutput(

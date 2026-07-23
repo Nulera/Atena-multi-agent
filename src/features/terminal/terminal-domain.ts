@@ -1,11 +1,5 @@
 export type TerminalStatus =
-  | "starting"
-  | "open"
-  | "idle"
-  | "running"
-  | "stopping"
-  | "stopped"
-  | "failed"
+  "starting" | "open" | "idle" | "running" | "stopping" | "stopped" | "failed"
 
 export interface TerminalState {
   status: TerminalStatus
@@ -53,8 +47,10 @@ export function detectCli(commandLine: string): string {
   const executable = firstToken?.[1] || firstToken?.[2] || firstToken?.[3]
   if (!executable) return "PowerShell"
   return (
-    executable.split(/[\\/]/).pop()?.replace(/\.(exe|cmd|bat|ps1)$/i, "") ||
-    "PowerShell"
+    executable
+      .split(/[\\/]/)
+      .pop()
+      ?.replace(/\.(exe|cmd|bat|ps1)$/i, "") || "PowerShell"
   )
 }
 

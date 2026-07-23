@@ -55,12 +55,7 @@ interface WorkspaceViewProps {
 }
 
 type ViewTab =
-  | "orchestrator"
-  | "agents"
-  | "terminals"
-  | "sessions"
-  | "git"
-  | "settings"
+  "orchestrator" | "agents" | "terminals" | "sessions" | "git" | "settings"
 
 export function WorkspaceView({ workspace, onBack }: WorkspaceViewProps) {
   const { theme, themes, setTheme } = useTheme()
@@ -192,7 +187,9 @@ export function WorkspaceView({ workspace, onBack }: WorkspaceViewProps) {
           title="Back to workspaces"
         >
           <img src={atenaMark} alt="" className="h-4 w-4 rounded-[4px]" />
-          <span className="text-[10px] font-semibold tracking-[0.14em]">ATENA</span>
+          <span className="text-[10px] font-semibold tracking-[0.14em]">
+            ATENA
+          </span>
         </button>
         <div className="flex min-w-0 items-center gap-1.5 px-1 text-[10px]">
           <Folder className="h-3 w-3 text-[hsl(var(--muted-foreground))]" />
@@ -225,7 +222,10 @@ export function WorkspaceView({ workspace, onBack }: WorkspaceViewProps) {
               <span className="text-[9px] font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
                 project
               </span>
-              <span className="ml-auto h-1.5 w-1.5 bg-[hsl(var(--success))]" title="Workspace online" />
+              <span
+                className="ml-auto h-1.5 w-1.5 bg-[hsl(var(--success))]"
+                title="Workspace online"
+              />
             </div>
           </SidebarHeader>
           <SidebarContent>
@@ -240,7 +240,9 @@ export function WorkspaceView({ workspace, onBack }: WorkspaceViewProps) {
                 <span className="min-w-0 flex-1 truncate text-[10px] font-medium">
                   {workspace.name}
                 </span>
-                <span className="text-[8px] text-[hsl(var(--muted-foreground))]">OPEN</span>
+                <span className="text-[8px] text-[hsl(var(--muted-foreground))]">
+                  OPEN
+                </span>
               </button>
             </div>
             <p className="px-3 pb-0.5 pt-2 text-[9px] font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
@@ -292,7 +294,9 @@ export function WorkspaceView({ workspace, onBack }: WorkspaceViewProps) {
                           <span className="flex min-w-0 items-center gap-1 text-[8px] uppercase text-[hsl(var(--muted-foreground))]">
                             <span>{pane.status}</span>
                             <span className="text-[hsl(var(--muted))]">/</span>
-                            <span className="truncate normal-case">{pane.cli}</span>
+                            <span className="truncate normal-case">
+                              {pane.cli}
+                            </span>
                           </span>
                         </span>
                         <span

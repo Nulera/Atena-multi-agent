@@ -54,7 +54,9 @@ const statusLabels: Record<string, { label: string; color: string }> = {
 
 function getStatusInfo(status: string) {
   const code = status.replace(/\s/g, "").charAt(0) || "?"
-  return statusLabels[code] ?? { label: status, color: "text-[hsl(var(--muted))]" }
+  return (
+    statusLabels[code] ?? { label: status, color: "text-[hsl(var(--muted))]" }
+  )
 }
 
 function errorMessage(error: unknown) {
@@ -219,7 +221,8 @@ export function GitPanel({ workspacePath, onBranchChange }: GitPanelProps) {
             <div>
               <p className="text-xs font-medium">No Git repository yet</p>
               <p className="mt-1 max-w-sm text-[10px] leading-relaxed text-[hsl(var(--muted))]">
-                Initialize this project to track changes. You can connect GitHub after that.
+                Initialize this project to track changes. You can connect GitHub
+                after that.
               </p>
             </div>
             <Button
@@ -247,7 +250,8 @@ export function GitPanel({ workspacePath, onBranchChange }: GitPanelProps) {
             <div>
               <p className="text-xs font-medium">Git is not installed</p>
               <p className="mt-1 max-w-sm text-[10px] leading-relaxed text-[hsl(var(--muted))]">
-                Install Git for Windows, restart Atena, and this panel will connect automatically.
+                Install Git for Windows, restart Atena, and this panel will
+                connect automatically.
               </p>
             </div>
             <code className="border border-[hsl(var(--border))] bg-[hsl(var(--panel-elevated))] px-2.5 py-1.5 text-[10px]">
@@ -282,9 +286,17 @@ export function GitPanel({ workspacePath, onBranchChange }: GitPanelProps) {
           className="h-6 px-2 text-[10px]"
           disabled={busy || !hasRemote}
           onClick={() =>
-            runOperation("pull", () => gitPull(workspacePath), "Repository updated")
+            runOperation(
+              "pull",
+              () => gitPull(workspacePath),
+              "Repository updated"
+            )
           }
-          title={hasRemote ? "Pull with fast-forward only" : "Connect an origin first"}
+          title={
+            hasRemote
+              ? "Pull with fast-forward only"
+              : "Connect an origin first"
+          }
         >
           {operation === "pull" ? (
             <Loader2 className="h-2.5 w-2.5 animate-spin" />
@@ -319,20 +331,34 @@ export function GitPanel({ workspacePath, onBranchChange }: GitPanelProps) {
           <Button
             variant="ghost"
             size="icon"
-            className={cn("h-6 w-6", !hasIdentity && "text-[hsl(var(--warning))]")}
+            className={cn(
+              "h-6 w-6",
+              !hasIdentity && "text-[hsl(var(--warning))]"
+            )}
             onClick={openIdentity}
-            title={hasIdentity ? `${status.userName} <${status.userEmail}>` : "Configure Git identity"}
+            title={
+              hasIdentity
+                ? `${status.userName} <${status.userEmail}>`
+                : "Configure Git identity"
+            }
           >
             <UserRound className="h-2.5 w-2.5" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className={cn("h-6 w-6", !hasRemote && "text-[hsl(var(--warning))]")}
+            className={cn(
+              "h-6 w-6",
+              !hasRemote && "text-[hsl(var(--warning))]"
+            )}
             onClick={openRemote}
             title={hasRemote ? status.remoteUrl : "Connect origin"}
           >
-            {hasRemote ? <Link2 className="h-2.5 w-2.5" /> : <Settings2 className="h-2.5 w-2.5" />}
+            {hasRemote ? (
+              <Link2 className="h-2.5 w-2.5" />
+            ) : (
+              <Settings2 className="h-2.5 w-2.5" />
+            )}
           </Button>
           <Button
             variant="ghost"
@@ -342,7 +368,9 @@ export function GitPanel({ workspacePath, onBranchChange }: GitPanelProps) {
             disabled={busy || loading}
             title="refresh"
           >
-            <RefreshCw className={cn("h-2.5 w-2.5", loading && "animate-spin")} />
+            <RefreshCw
+              className={cn("h-2.5 w-2.5", loading && "animate-spin")}
+            />
           </Button>
         </div>
       </div>
@@ -351,7 +379,9 @@ export function GitPanel({ workspacePath, onBranchChange }: GitPanelProps) {
         <div className="flex items-center gap-2 border-b border-[hsl(var(--border))] bg-[hsl(var(--warning)/0.06)] px-2.5 py-1.5 text-[10px]">
           <AlertTriangle className="h-3 w-3 shrink-0 text-[hsl(var(--warning))]" />
           <span className="text-[hsl(var(--muted-foreground))]">
-            {!hasIdentity ? "Set your Git name and email." : "Connect an origin to pull and push."}
+            {!hasIdentity
+              ? "Set your Git name and email."
+              : "Connect an origin to pull and push."}
           </span>
           <Button
             variant="link"
@@ -368,12 +398,16 @@ export function GitPanel({ workspacePath, onBranchChange }: GitPanelProps) {
         <div className="flex w-56 flex-col border-r border-[hsl(var(--border))]">
           <div className="flex-1 overflow-y-auto">
             {loading ? (
-              <p className="p-2.5 text-[11px] text-[hsl(var(--muted))]">loading...</p>
+              <p className="p-2.5 text-[11px] text-[hsl(var(--muted))]">
+                loading...
+              </p>
             ) : status.modifiedFiles.length === 0 ? (
               <div className="flex flex-col items-center gap-1.5 p-4 text-center">
                 <GitCommit className="h-5 w-5 text-[hsl(var(--muted))] opacity-40" />
                 <p className="text-[11px]">clean</p>
-                <p className="text-[10px] text-[hsl(var(--muted))]">no local changes</p>
+                <p className="text-[10px] text-[hsl(var(--muted))]">
+                  no local changes
+                </p>
               </div>
             ) : (
               <div className="p-1">
@@ -394,10 +428,17 @@ export function GitPanel({ workspacePath, onBranchChange }: GitPanelProps) {
                         loadDiff(file)
                       }}
                     >
-                      <span className={cn("shrink-0 font-mono text-[10px]", info.color)}>
+                      <span
+                        className={cn(
+                          "shrink-0 font-mono text-[10px]",
+                          info.color
+                        )}
+                      >
                         {info.label}
                       </span>
-                      <span className="min-w-0 flex-1 truncate text-[11px]">{file.path}</span>
+                      <span className="min-w-0 flex-1 truncate text-[11px]">
+                        {file.path}
+                      </span>
                     </button>
                   )
                 })}
@@ -419,7 +460,9 @@ export function GitPanel({ workspacePath, onBranchChange }: GitPanelProps) {
             <>
               <div className="flex items-center gap-1.5 border-b border-[hsl(var(--border))] px-2.5 py-1.5">
                 <FileText className="h-3 w-3 text-[hsl(var(--muted))]" />
-                <span className="truncate text-[11px] font-medium">{selectedFile.path}</span>
+                <span className="truncate text-[11px] font-medium">
+                  {selectedFile.path}
+                </span>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -432,10 +475,13 @@ export function GitPanel({ workspacePath, onBranchChange }: GitPanelProps) {
               </div>
               <div className="flex-1 overflow-auto p-2">
                 {diffLoading ? (
-                  <p className="text-[11px] text-[hsl(var(--muted))]">loading diff...</p>
+                  <p className="text-[11px] text-[hsl(var(--muted))]">
+                    loading diff...
+                  </p>
                 ) : (
                   <pre className="whitespace-pre-wrap break-all font-mono text-[11px] leading-relaxed text-[hsl(var(--foreground))]">
-                    {diff || "No diff available. New files appear after the first commit."}
+                    {diff ||
+                      "No diff available. New files appear after the first commit."}
                   </pre>
                 )}
               </div>
@@ -458,7 +504,8 @@ export function GitPanel({ workspacePath, onBranchChange }: GitPanelProps) {
             <DialogHeader>
               <DialogTitle>Git identity</DialogTitle>
               <DialogDescription>
-                Used as the author of commits in this project. This does not store your GitHub password.
+                Used as the author of commits in this project. This does not
+                store your GitHub password.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-2">
@@ -482,11 +529,17 @@ export function GitPanel({ workspacePath, onBranchChange }: GitPanelProps) {
               </label>
             </div>
             <DialogFooter>
-              <Button type="button" size="sm" onClick={() => setIdentityOpen(false)}>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setIdentityOpen(false)}
+              >
                 cancel
               </Button>
               <Button type="submit" variant="default" size="sm" disabled={busy}>
-                {operation === "identity" && <Loader2 className="h-3 w-3 animate-spin" />}
+                {operation === "identity" && (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                )}
                 save identity
               </Button>
             </DialogFooter>
@@ -500,7 +553,8 @@ export function GitPanel({ workspacePath, onBranchChange }: GitPanelProps) {
             <DialogHeader>
               <DialogTitle>Connect remote repository</DialogTitle>
               <DialogDescription>
-                Paste the HTTPS or SSH URL from GitHub. Authentication is handled securely by your installed Git.
+                Paste the HTTPS or SSH URL from GitHub. Authentication is
+                handled securely by your installed Git.
               </DialogDescription>
             </DialogHeader>
             <label className="block space-y-1 text-[10px] text-[hsl(var(--muted))]">
@@ -513,11 +567,17 @@ export function GitPanel({ workspacePath, onBranchChange }: GitPanelProps) {
               />
             </label>
             <DialogFooter>
-              <Button type="button" size="sm" onClick={() => setRemoteOpen(false)}>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setRemoteOpen(false)}
+              >
                 cancel
               </Button>
               <Button type="submit" variant="default" size="sm" disabled={busy}>
-                {operation === "remote" && <Loader2 className="h-3 w-3 animate-spin" />}
+                {operation === "remote" && (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                )}
                 connect origin
               </Button>
             </DialogFooter>
@@ -531,7 +591,8 @@ export function GitPanel({ workspacePath, onBranchChange }: GitPanelProps) {
             <DialogHeader>
               <DialogTitle>Create commit</DialogTitle>
               <DialogDescription>
-                All {status.modifiedFiles.length} changed files will be added to this commit.
+                All {status.modifiedFiles.length} changed files will be added to
+                this commit.
               </DialogDescription>
             </DialogHeader>
             <label className="block space-y-1 text-[10px] text-[hsl(var(--muted))]">
@@ -544,11 +605,17 @@ export function GitPanel({ workspacePath, onBranchChange }: GitPanelProps) {
               />
             </label>
             <DialogFooter>
-              <Button type="button" size="sm" onClick={() => setCommitOpen(false)}>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setCommitOpen(false)}
+              >
                 cancel
               </Button>
               <Button type="submit" variant="default" size="sm" disabled={busy}>
-                {operation === "commit" && <Loader2 className="h-3 w-3 animate-spin" />}
+                {operation === "commit" && (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                )}
                 create commit
               </Button>
             </DialogFooter>
@@ -561,25 +628,40 @@ export function GitPanel({ workspacePath, onBranchChange }: GitPanelProps) {
           <DialogHeader>
             <DialogTitle>Push source code?</DialogTitle>
             <DialogDescription>
-              This sends the current branch and its commits to the remote repository.
+              This sends the current branch and its commits to the remote
+              repository.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 border border-[hsl(var(--border))] bg-[hsl(var(--panel-elevated))] p-2.5 text-[10px]">
             <div className="flex gap-2">
-              <span className="w-14 shrink-0 text-[hsl(var(--muted))]">branch</span>
+              <span className="w-14 shrink-0 text-[hsl(var(--muted))]">
+                branch
+              </span>
               <span className="font-mono">{status.branch || "HEAD"}</span>
             </div>
             <div className="flex gap-2">
-              <span className="w-14 shrink-0 text-[hsl(var(--muted))]">remote</span>
-              <span className="min-w-0 break-all font-mono">{status.remoteUrl}</span>
+              <span className="w-14 shrink-0 text-[hsl(var(--muted))]">
+                remote
+              </span>
+              <span className="min-w-0 break-all font-mono">
+                {status.remoteUrl}
+              </span>
             </div>
           </div>
           <DialogFooter>
             <Button type="button" size="sm" onClick={() => setPushOpen(false)}>
               cancel
             </Button>
-            <Button type="button" variant="default" size="sm" disabled={busy} onClick={confirmPush}>
-              {operation === "push" && <Loader2 className="h-3 w-3 animate-spin" />}
+            <Button
+              type="button"
+              variant="default"
+              size="sm"
+              disabled={busy}
+              onClick={confirmPush}
+            >
+              {operation === "push" && (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              )}
               push code
             </Button>
           </DialogFooter>

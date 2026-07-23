@@ -37,27 +37,27 @@ O nome vem de **Atena**, deusa grega da estratégia e da sabedoria. A proposta d
 
 ## O arsenal
 
-| Capacidade | O que entrega |
-| --- | --- |
-| **Terminal Mesh** | Múltiplos PTYs reais, simultâneos e responsivos em grid. |
-| **Context Keeper** | Terminais continuam ativos ao navegar entre as áreas do aplicativo. |
-| **CLI Identity** | Nome, logo e cor mudam automaticamente para Codex, Claude, OpenCode e outras CLIs. |
-| **Agent Orchestrator** | Fluxos especializados para frontend, backend, QA, revisão e pesquisa. |
-| **Session Memory** | Logs e sessões armazenados localmente em SQLite. |
-| **Repository Intel** | Visão de Git, branches e alterações sem sair do workspace. |
-| **Command Surface** | Ações rápidas por Command Palette e atalhos de teclado. |
-| **Local Runtime** | Dados, processos e contexto permanecem na sua máquina. |
+| Capacidade             | O que entrega                                                                      |
+| ---------------------- | ---------------------------------------------------------------------------------- |
+| **Terminal Mesh**      | Múltiplos PTYs reais, simultâneos e responsivos em grid.                           |
+| **Context Keeper**     | Terminais continuam ativos ao navegar entre as áreas do aplicativo.                |
+| **CLI Identity**       | Nome, logo e cor mudam automaticamente para Codex, Claude, OpenCode e outras CLIs. |
+| **Agent Orchestrator** | Fluxos especializados para frontend, backend, QA, revisão e pesquisa.              |
+| **Session Memory**     | Logs e sessões armazenados localmente em SQLite.                                   |
+| **Repository Intel**   | Visão de Git, branches e alterações sem sair do workspace.                         |
+| **Command Surface**    | Ações rápidas por Command Palette e atalhos de teclado.                            |
+| **Local Runtime**      | Dados, processos e contexto permanecem na sua máquina.                             |
 
 ## Identidade das CLIs
 
 Cada ferramenta recebe uma assinatura visual própria no cabeçalho do terminal e no menu lateral.
 
-| CLI | Identidade | Estado detectado |
-| --- | --- | --- |
-| ![Codex](https://img.shields.io/badge/Codex-10A37F?style=flat-square&logo=openai&logoColor=white) | Verde estratégico | `RUNNING`, `IDLE`, `STOPPED` |
-| ![Claude](https://img.shields.io/badge/Claude-D97757?style=flat-square&logo=anthropic&logoColor=white) | Laranja | `RUNNING`, `IDLE`, `STOPPED` |
-| ![OpenCode](https://img.shields.io/badge/OpenCode-2684FF?style=flat-square&logo=codeium&logoColor=white) | Azul elétrico | `RUNNING`, `IDLE`, `STOPPED` |
-| ![PowerShell](https://img.shields.io/badge/PowerShell-3977D5?style=flat-square&logo=powershell&logoColor=white) | Azul profundo | `OPEN`, `IDLE`, `STOPPED` |
+| CLI                                                                                                             | Identidade        | Estado detectado             |
+| --------------------------------------------------------------------------------------------------------------- | ----------------- | ---------------------------- |
+| ![Codex](https://img.shields.io/badge/Codex-10A37F?style=flat-square&logo=openai&logoColor=white)               | Verde estratégico | `RUNNING`, `IDLE`, `STOPPED` |
+| ![Claude](https://img.shields.io/badge/Claude-D97757?style=flat-square&logo=anthropic&logoColor=white)          | Laranja           | `RUNNING`, `IDLE`, `STOPPED` |
+| ![OpenCode](https://img.shields.io/badge/OpenCode-2684FF?style=flat-square&logo=codeium&logoColor=white)        | Azul elétrico     | `RUNNING`, `IDLE`, `STOPPED` |
+| ![PowerShell](https://img.shields.io/badge/PowerShell-3977D5?style=flat-square&logo=powershell&logoColor=white) | Azul profundo     | `OPEN`, `IDLE`, `STOPPED`    |
 
 O detector filtra sequências internas do terminal e mantém a identidade da CLI durante toda a execução do TUI.
 
@@ -136,21 +136,21 @@ Mantenedores podem enviar a primeira versão ao WinGet executando:
 
 ## Comandos úteis
 
-| Comando | Ação |
-| --- | --- |
+| Comando             | Ação                                  |
+| ------------------- | ------------------------------------- |
 | `npm run tauri:dev` | Inicia frontend e aplicativo desktop. |
-| `npm run build` | Valida TypeScript e gera o frontend. |
-| `cargo check` | Verifica o backend Rust. |
-| `npm run lint` | Executa a análise estática. |
-| `npm run format` | Formata o projeto. |
+| `npm run build`     | Valida TypeScript e gera o frontend.  |
+| `cargo check`       | Verifica o backend Rust.              |
+| `npm run lint`      | Executa a análise estática.           |
+| `npm run format`    | Formata o projeto.                    |
 
 ## Atalhos
 
-| Atalho | Ação |
-| --- | --- |
-| `Ctrl + K` | Abre a Command Palette. |
+| Atalho     | Ação                               |
+| ---------- | ---------------------------------- |
+| `Ctrl + K` | Abre a Command Palette.            |
 | `Ctrl + T` | Retorna ao workspace de terminais. |
-| `Ctrl + N` | Abre a área de agentes. |
+| `Ctrl + N` | Abre a área de agentes.            |
 
 ## Princípios
 

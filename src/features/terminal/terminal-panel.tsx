@@ -15,7 +15,11 @@ interface TerminalTab {
   agent: Agent
 }
 
-export function TerminalPanel({ workspaceId, workspacePath, agents }: TerminalPanelProps) {
+export function TerminalPanel({
+  workspaceId,
+  workspacePath,
+  agents,
+}: TerminalPanelProps) {
   const [tabs, setTabs] = useState<TerminalTab[]>([])
   const [activeTab, setActiveTab] = useState<string | null>(null)
 
@@ -25,15 +29,18 @@ export function TerminalPanel({ workspaceId, workspacePath, agents }: TerminalPa
     setActiveTab(id)
   }, [])
 
-  const closeTab = useCallback((id: string) => {
-    setTabs((prev) => {
-      const next = prev.filter((t) => t.id !== id)
-      if (activeTab === id) {
-        setActiveTab(next.length > 0 ? next[next.length - 1].id : null)
-      }
-      return next
-    })
-  }, [activeTab])
+  const closeTab = useCallback(
+    (id: string) => {
+      setTabs((prev) => {
+        const next = prev.filter((t) => t.id !== id)
+        if (activeTab === id) {
+          setActiveTab(next.length > 0 ? next[next.length - 1].id : null)
+        }
+        return next
+      })
+    },
+    [activeTab]
+  )
 
   const activeTabData = tabs.find((t) => t.id === activeTab)
 

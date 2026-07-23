@@ -84,7 +84,9 @@ export function TerminalGrid({
   workspacePath,
   onPanesChange,
 }: TerminalGridProps) {
-  const [panes, setPanes] = useState<Pane[]>(() => [createPane(workspacePath, 1)])
+  const [panes, setPanes] = useState<Pane[]>(() => [
+    createPane(workspacePath, 1),
+  ])
   const [layout, setLayout] = useState<LayoutMode>("auto")
   const [layoutReady, setLayoutReady] = useState(false)
 
@@ -148,7 +150,8 @@ export function TerminalGrid({
 
   const openPane = useCallback(() => {
     setPanes((current) => {
-      const nextOrdinal = current.reduce((max, pane) => Math.max(max, pane.ordinal), 0) + 1
+      const nextOrdinal =
+        current.reduce((max, pane) => Math.max(max, pane.ordinal), 0) + 1
       return [...current, createPane(workspacePath, nextOrdinal)]
     })
   }, [workspacePath])
@@ -157,20 +160,24 @@ export function TerminalGrid({
     setPanes((current) => current.filter((pane) => pane.id !== id))
   }, [])
 
-  const updatePaneActivity = useCallback((id: string, activity: TerminalActivity) => {
-    setPanes((current) =>
-      current.map((pane) =>
-        pane.id === id &&
-        (pane.activity.status !== activity.status || pane.activity.cli !== activity.cli)
-          ? {
-              ...pane,
-              label: getCliAppearance(activity.cli).label,
-              activity,
-            }
-          : pane
+  const updatePaneActivity = useCallback(
+    (id: string, activity: TerminalActivity) => {
+      setPanes((current) =>
+        current.map((pane) =>
+          pane.id === id &&
+          (pane.activity.status !== activity.status ||
+            pane.activity.cli !== activity.cli)
+            ? {
+                ...pane,
+                label: getCliAppearance(activity.cli).label,
+                activity,
+              }
+            : pane
+        )
       )
-    )
-  }, [])
+    },
+    []
+  )
 
   useEffect(() => {
     onPanesChange?.(
@@ -202,11 +209,13 @@ export function TerminalGrid({
         </div>
 
         <div className="ml-2 flex items-center border border-[hsl(var(--border))] bg-[hsl(var(--background))]">
-          {([
-            ["auto", Maximize2, "Auto layout"],
-            ["columns", Columns2, "Column layout"],
-            ["grid", Grid2X2, "Grid layout"],
-          ] as const).map(([mode, Icon, label]) => (
+          {(
+            [
+              ["auto", Maximize2, "Auto layout"],
+              ["columns", Columns2, "Column layout"],
+              ["grid", Grid2X2, "Grid layout"],
+            ] as const
+          ).map(([mode, Icon, label]) => (
             <button
               key={mode}
               type="button"
@@ -250,7 +259,9 @@ export function TerminalGrid({
               <TerminalIcon className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />
             </div>
             <div>
-              <p className="text-[11px] font-semibold uppercase">No active terminals</p>
+              <p className="text-[11px] font-semibold uppercase">
+                No active terminals
+              </p>
               <p className="mt-1 text-[10px] text-[hsl(var(--muted-foreground))]">
                 Start a shell in {workspacePath}
               </p>
@@ -268,29 +279,31 @@ export function TerminalGrid({
               gridAutoRows: "minmax(13rem, 1fr)",
             }}
           >
-            {panes.map((pane) => (
+            {panes.map((pane) =>
               (() => {
                 const cliAppearance = getCliAppearance(pane.activity.cli)
                 const CliIcon = cliAppearance.icon
                 return (
-              <div
-                key={pane.id}
-                className="min-h-52 min-w-0 overflow-hidden bg-[hsl(var(--panel))]"
-              >
-                <TerminalView
-                  agentName={pane.label}
-                  workingDir={pane.workingDir}
-                  workspaceId={workspaceId}
-                  command={pane.command}
-                  onClose={() => closePane(pane.id)}
-                  onActivityChange={(activity) => updatePaneActivity(pane.id, activity)}
-                  accentColor={cliAppearance.color}
-                  cliIcon={<CliIcon className="h-3.5 w-3.5" />}
-                />
-              </div>
+                  <div
+                    key={pane.id}
+                    className="min-h-52 min-w-0 overflow-hidden bg-[hsl(var(--panel))]"
+                  >
+                    <TerminalView
+                      agentName={pane.label}
+                      workingDir={pane.workingDir}
+                      workspaceId={workspaceId}
+                      command={pane.command}
+                      onClose={() => closePane(pane.id)}
+                      onActivityChange={(activity) =>
+                        updatePaneActivity(pane.id, activity)
+                      }
+                      accentColor={cliAppearance.color}
+                      cliIcon={<CliIcon className="h-3.5 w-3.5" />}
+                    />
+                  </div>
                 )
               })()
-            ))}
+            )}
           </div>
         )}
       </div>

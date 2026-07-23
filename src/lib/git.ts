@@ -68,7 +68,10 @@ export async function gitSetRemote(path: string, url: string): Promise<string> {
   )
 }
 
-export async function gitCommitAll(path: string, message: string): Promise<string> {
+export async function gitCommitAll(
+  path: string,
+  message: string
+): Promise<string> {
   return await invokeCommand<string>(
     "git_commit_all",
     { path, message },

@@ -12,8 +12,7 @@ export type CommandGateway = <T>(
   operation: string
 ) => Promise<T>
 
-const tauriExecutor: CommandExecutor = (command, args) =>
-  invoke(command, args)
+const tauriExecutor: CommandExecutor = (command, args) => invoke(command, args)
 
 export function createCommandGateway(
   execute: CommandExecutor = tauriExecutor

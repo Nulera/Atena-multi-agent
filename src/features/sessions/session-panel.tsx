@@ -1,12 +1,5 @@
 import { useState, useCallback, useEffect } from "react"
-import {
-  History,
-  Search,
-  Trash2,
-  Pencil,
-  Clock,
-  Download,
-} from "lucide-react"
+import { History, Search, Trash2, Pencil, Clock, Download } from "lucide-react"
 import { save } from "@tauri-apps/plugin-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -133,7 +126,9 @@ export function SessionPanel({ workspaceId, agents }: SessionPanelProps) {
   const handleExport = useCallback(
     async (format: "markdown" | "json") => {
       if (!selectedSession) return
-      const safeName = (selectedSession.name || `session-${selectedSession.id.slice(0, 6)}`)
+      const safeName = (
+        selectedSession.name || `session-${selectedSession.id.slice(0, 6)}`
+      )
         .replace(/[^a-z0-9-_]+/gi, "-")
         .replace(/^-+|-+$/g, "")
       const extension = format === "markdown" ? "md" : "json"
@@ -150,9 +145,17 @@ export function SessionPanel({ workspaceId, agents }: SessionPanelProps) {
 
       try {
         await exportSession(selectedSession.id, path, format)
-        toast({ title: "session exported", description: path, variant: "success" })
+        toast({
+          title: "session exported",
+          description: path,
+          variant: "success",
+        })
       } catch (error) {
-        toast({ title: "export failed", description: String(error), variant: "danger" })
+        toast({
+          title: "export failed",
+          description: String(error),
+          variant: "danger",
+        })
       }
     },
     [selectedSession, toast]
@@ -165,7 +168,9 @@ export function SessionPanel({ workspaceId, agents }: SessionPanelProps) {
           <span className="text-[11px] font-medium text-[hsl(var(--muted-foreground))]">
             sessions
           </span>
-          <span className="text-[10px] text-[hsl(var(--muted))]">({filtered.length})</span>
+          <span className="text-[10px] text-[hsl(var(--muted))]">
+            ({filtered.length})
+          </span>
           <div className="ml-auto relative">
             <Search className="absolute left-1.5 top-1/2 h-2.5 w-2.5 -translate-y-1/2 text-[hsl(var(--muted))]" />
             <Input
@@ -179,7 +184,9 @@ export function SessionPanel({ workspaceId, agents }: SessionPanelProps) {
 
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <p className="p-2.5 text-[11px] text-[hsl(var(--muted))]">loading...</p>
+            <p className="p-2.5 text-[11px] text-[hsl(var(--muted))]">
+              loading...
+            </p>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center gap-1.5 p-4 text-center">
               <History className="h-5 w-5 text-[hsl(var(--muted))] opacity-40" />
@@ -207,7 +214,13 @@ export function SessionPanel({ workspaceId, agents }: SessionPanelProps) {
                       <span className="truncate text-[11px] font-medium">
                         {session.name || `session-${session.id.slice(0, 6)}`}
                       </span>
-                      <span className={cn("ml-auto text-[9px] uppercase", statusStyles[session.status] ?? "text-[hsl(var(--muted))]")}>
+                      <span
+                        className={cn(
+                          "ml-auto text-[9px] uppercase",
+                          statusStyles[session.status] ??
+                            "text-[hsl(var(--muted))]"
+                        )}
+                      >
                         {session.status}
                       </span>
                     </div>
@@ -256,7 +269,8 @@ export function SessionPanel({ workspaceId, agents }: SessionPanelProps) {
           <>
             <div className="flex items-center gap-2 border-b border-[hsl(var(--border))] px-2.5 py-1.5">
               <span className="text-[11px] font-medium">
-                {selectedSession.name || `session-${selectedSession.id.slice(0, 6)}`}
+                {selectedSession.name ||
+                  `session-${selectedSession.id.slice(0, 6)}`}
               </span>
               <span className="text-[10px] text-[hsl(var(--muted))]">
                 {new Date(selectedSession.startedAt).toLocaleString()}
@@ -266,7 +280,9 @@ export function SessionPanel({ workspaceId, agents }: SessionPanelProps) {
                 size="sm"
                 className="ml-auto h-6 text-[10px]"
                 onClick={() => {
-                  const text = logs.map((l) => `[${l.type}] ${l.content}`).join("\n")
+                  const text = logs
+                    .map((l) => `[${l.type}] ${l.content}`)
+                    .join("\n")
                   navigator.clipboard.writeText(text)
                   toast({ title: "logs copied", variant: "success" })
                 }}
@@ -302,12 +318,17 @@ export function SessionPanel({ workspaceId, agents }: SessionPanelProps) {
           <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
             <History className="h-6 w-6 text-[hsl(var(--muted))] opacity-40" />
             <p className="text-xs">select a session</p>
-            <p className="text-[10px] text-[hsl(var(--muted))]">choose one from the left to view logs</p>
+            <p className="text-[10px] text-[hsl(var(--muted))]">
+              choose one from the left to view logs
+            </p>
           </div>
         )}
       </div>
 
-      <Dialog open={!!renameDialog} onOpenChange={(o) => !o && setRenameDialog(null)}>
+      <Dialog
+        open={!!renameDialog}
+        onOpenChange={(o) => !o && setRenameDialog(null)}
+      >
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>rename session</DialogTitle>
@@ -319,21 +340,47 @@ export function SessionPanel({ workspaceId, agents }: SessionPanelProps) {
             placeholder="session name"
           />
           <DialogFooter>
-            <Button variant="ghost" size="sm" onClick={() => setRenameDialog(null)}>cancel</Button>
-            <Button variant="default" size="sm" onClick={handleRename} disabled={!renameValue.trim}>save</Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setRenameDialog(null)}
+            >
+              cancel
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleRename}
+              disabled={!renameValue.trim}
+            >
+              save
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!deleteDialog} onOpenChange={(o) => !o && setDeleteDialog(null)}>
+      <Dialog
+        open={!!deleteDialog}
+        onOpenChange={(o) => !o && setDeleteDialog(null)}
+      >
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>delete session?</DialogTitle>
-            <DialogDescription>logs will be permanently removed.</DialogDescription>
+            <DialogDescription>
+              logs will be permanently removed.
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="ghost" size="sm" onClick={() => setDeleteDialog(null)}>cancel</Button>
-            <Button variant="danger" size="sm" onClick={handleDelete}>delete</Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setDeleteDialog(null)}
+            >
+              cancel
+            </Button>
+            <Button variant="danger" size="sm" onClick={handleDelete}>
+              delete
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

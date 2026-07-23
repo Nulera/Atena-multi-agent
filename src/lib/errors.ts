@@ -15,10 +15,7 @@ function isAppError(error: unknown): error is AppError {
   )
 }
 
-export function normalizeAppError(
-  error: unknown,
-  operation: string
-): AppError {
+export function normalizeAppError(error: unknown, operation: string): AppError {
   if (isAppError(error)) return error
 
   return {

@@ -53,7 +53,10 @@ function DialogFooter({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("mt-3 flex justify-end gap-1.5", className)} {...props} />
+    <div
+      className={cn("mt-3 flex justify-end gap-1.5", className)}
+      {...props}
+    />
   )
 }
 

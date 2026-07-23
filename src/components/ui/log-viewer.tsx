@@ -46,7 +46,12 @@ export function LogViewer({ logs, className }: LogViewerProps) {
                 {typePrefix[log.type]}
               </span>
             )}
-            <span className={cn("whitespace-pre-wrap break-all", typeColors[log.type])}>
+            <span
+              className={cn(
+                "whitespace-pre-wrap break-all",
+                typeColors[log.type]
+              )}
+            >
               {log.content}
             </span>
           </div>

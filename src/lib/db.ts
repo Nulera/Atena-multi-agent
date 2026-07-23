@@ -12,7 +12,11 @@ import type {
 // ---- Filesystem ----
 
 export async function validatePath(path: string): Promise<boolean> {
-  return await invokeCommand<boolean>("validate_path", { path }, "fs.validatePath")
+  return await invokeCommand<boolean>(
+    "validate_path",
+    { path },
+    "fs.validatePath"
+  )
 }
 
 export async function pathExists(path: string): Promise<boolean> {
@@ -71,17 +75,15 @@ export async function listAgents(workspaceId: string): Promise<Agent[]> {
   )
 }
 
-export async function createAgent(
-  data: {
-    workspaceId: string
-    name: string
-    role: string
-    description: string
-    basePrompt: string
-    command: string
-    workingDirectory: string
-  }
-): Promise<Agent> {
+export async function createAgent(data: {
+  workspaceId: string
+  name: string
+  role: string
+  description: string
+  basePrompt: string
+  command: string
+  workingDirectory: string
+}): Promise<Agent> {
   return await invokeCommand<Agent>("create_agent", data, "agent.create")
 }
 

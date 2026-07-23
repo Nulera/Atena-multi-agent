@@ -205,12 +205,18 @@ export function TerminalView({
         if (disposedRef.current) return
         term.write(data)
         const plainOutput = stripAnsi(data)
-        outputTailRef.current = `${outputTailRef.current}${plainOutput}`.slice(-500)
-        const hasKnownInteractiveCli = /^(claude|codex|opencode)$/i.test(currentCliRef.current)
+        outputTailRef.current = `${outputTailRef.current}${plainOutput}`.slice(
+          -500
+        )
+        const hasKnownInteractiveCli = /^(claude|codex|opencode)$/i.test(
+          currentCliRef.current
+        )
         if (!hasKnownInteractiveCli) {
           if (/claude\s+code/i.test(outputTailRef.current)) {
             reportActivity("running", "claude")
-          } else if (/(?:openai\s+codex|codex\s+cli)/i.test(outputTailRef.current)) {
+          } else if (
+            /(?:openai\s+codex|codex\s+cli)/i.test(outputTailRef.current)
+          ) {
             reportActivity("running", "codex")
           } else if (/\bopencode\b/i.test(outputTailRef.current)) {
             reportActivity("running", "opencode")
@@ -232,7 +238,9 @@ export function TerminalView({
         setIsRunning(false)
         reportActivity("stopped")
         if (sessionIdRef.current) {
-          updateSession(sessionIdRef.current, { status: "finished" }).catch(() => {})
+          updateSession(sessionIdRef.current, { status: "finished" }).catch(
+            () => {}
+          )
         }
       })
 
@@ -246,7 +254,9 @@ export function TerminalView({
         outputTailRef.current = plainScrollback.slice(-500)
         if (/claude\s+code/i.test(outputTailRef.current)) {
           reportActivity("running", "claude")
-        } else if (/(?:openai\s+codex|codex\s+cli)/i.test(outputTailRef.current)) {
+        } else if (
+          /(?:openai\s+codex|codex\s+cli)/i.test(outputTailRef.current)
+        ) {
           reportActivity("running", "codex")
         } else if (/\bopencode\b/i.test(outputTailRef.current)) {
           reportActivity("running", "opencode")
@@ -261,11 +271,21 @@ export function TerminalView({
         reportActivity("stopped")
       }
       if (sessionIdRef.current) {
-        addSessionLog(sessionIdRef.current, "error", String(err)).catch(() => {})
+        addSessionLog(sessionIdRef.current, "error", String(err)).catch(
+          () => {}
+        )
         updateSession(sessionIdRef.current, { status: "error" }).catch(() => {})
       }
     }
-  }, [command, workingDir, agentId, workspaceId, agentName, focusTerminal, reportActivity])
+  }, [
+    command,
+    workingDir,
+    agentId,
+    workspaceId,
+    agentName,
+    focusTerminal,
+    reportActivity,
+  ])
 
   // Initialize terminal + auto-start shell
   useEffect(() => {
@@ -350,7 +370,9 @@ export function TerminalView({
           addSessionLog(sessionIdRef.current, "command", data).catch(() => {})
         }
       } else {
-        pendingInputRef.current = `${pendingInputRef.current}${data}`.slice(-8192)
+        pendingInputRef.current = `${pendingInputRef.current}${data}`.slice(
+          -8192
+        )
       }
     })
 
@@ -396,11 +418,9 @@ export function TerminalView({
       fitRef.current?.fit()
       const terminal = termInstanceRef.current
       if (terminal && processIdRef.current) {
-        resizeProcess(
-          processIdRef.current,
-          terminal.rows,
-          terminal.cols
-        ).catch(() => {})
+        resizeProcess(processIdRef.current, terminal.rows, terminal.cols).catch(
+          () => {}
+        )
       }
     }
     const observer = new ResizeObserver(handleResize)
@@ -422,7 +442,9 @@ export function TerminalView({
         termInstanceRef.current?.write("\r\n\x1b[33m[killed]\x1b[0m\r\n")
       }
       if (sessionIdRef.current) {
-        updateSession(sessionIdRef.current, { status: "stopped" }).catch(() => {})
+        updateSession(sessionIdRef.current, { status: "stopped" }).catch(
+          () => {}
+        )
       }
     }
   }, [reportActivity])
@@ -463,10 +485,18 @@ export function TerminalView({
         style={{ boxShadow: `inset 2px 0 0 ${accentColor}` }}
       >
         <div className="flex h-full min-w-32 items-center gap-1.5 border-r border-[hsl(var(--border))] px-2">
-          <span className="flex h-5 w-5 items-center justify-center rounded-full text-white shadow-sm" style={{ backgroundColor: accentColor }}>
+          <span
+            className="flex h-5 w-5 items-center justify-center rounded-full text-white shadow-sm"
+            style={{ backgroundColor: accentColor }}
+          >
             {cliIcon ?? <TerminalIcon className="h-3.5 w-3.5" />}
           </span>
-          <span className="text-[10px] font-semibold" style={{ color: accentColor }}>{agentName}</span>
+          <span
+            className="text-[10px] font-semibold"
+            style={{ color: accentColor }}
+          >
+            {agentName}
+          </span>
           <span
             className={`h-1.5 w-1.5 ${
               isRunning ? "bg-[hsl(var(--success))]" : "bg-[hsl(var(--muted))]"

@@ -92,14 +92,16 @@ export function CommandGuard({
             Comando Potencialmente Perigoso
           </DialogTitle>
           <DialogDescription>
-            Este comando foi identificado como potencialmente destrutivo.
-            Reveja antes de aprovar.
+            Este comando foi identificado como potencialmente destrutivo. Reveja
+            antes de aprovar.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="rounded-[var(--radius-sm)] border border-[hsl(var(--border))] bg-[hsl(var(--panel-elevated))] p-3">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-[hsl(var(--muted-foreground))]">Comando:</span>
+              <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                Comando:
+              </span>
               <Badge variant="danger">Risco Alto</Badge>
             </div>
             <code className="block font-mono text-xs text-[hsl(var(--foreground))] break-all">
@@ -108,7 +110,8 @@ export function CommandGuard({
           </div>
           {check.matchedPattern && (
             <p className="text-xs text-[hsl(var(--warning))]">
-              Padrão detectado: <code className="font-mono">{check.matchedPattern}</code>
+              Padrão detectado:{" "}
+              <code className="font-mono">{check.matchedPattern}</code>
             </p>
           )}
           <div className="flex items-start gap-2 rounded-[var(--radius-sm)] border border-[hsl(var(--warning)/0.3)] bg-[hsl(var(--warning)/0.08)] p-3">
@@ -120,10 +123,22 @@ export function CommandGuard({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => { onDeny(); onOpenChange(false) }}>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              onDeny()
+              onOpenChange(false)
+            }}
+          >
             Negar
           </Button>
-          <Button variant="danger" onClick={() => { onApprove(); onOpenChange(false) }}>
+          <Button
+            variant="danger"
+            onClick={() => {
+              onApprove()
+              onOpenChange(false)
+            }}
+          >
             Aprovar
           </Button>
         </DialogFooter>
