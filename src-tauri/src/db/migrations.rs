@@ -1,6 +1,6 @@
 use rusqlite::Connection;
 
-pub const LATEST_SCHEMA_VERSION: usize = 2;
+pub const LATEST_SCHEMA_VERSION: usize = 3;
 
 pub fn run_migrations(conn: &Connection) -> Result<(), String> {
     let migrations: &[&str] = &[
@@ -123,6 +123,26 @@ pub fn run_migrations(conn: &Connection) -> Result<(), String> {
         CREATE INDEX IF NOT EXISTS idx_orch_steps_orch ON orchestration_steps(orchestration_id);
         CREATE INDEX IF NOT EXISTS idx_orch_events_orch ON orchestration_events(orchestration_id);
         "#,
+        // v3 — local orchestrator persistence
+        r#"
+        ALTER TABLE orchestration_steps ADD COLUMN cli_tool TEXT NOT NULL DEFAULT 'shell';
+        ALTER TABLE orchestration_steps ADD COLUMN prompt TEXT NOT NULL DEFAULT '';
+        ALTER TABLE orchestration_steps ADD COLUMN depends_on_json TEXT NOT NULL DEFAULT '[]';
+
+        CREATE TABLE squad_templates (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            description TEXT NOT NULL DEFAULT '',
+            definition_json TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+
+        CREATE INDEX idx_orch_steps_order
+            ON orchestration_steps(orchestration_id, order_index);
+        CREATE INDEX idx_orch_events_created
+            ON orchestration_events(orchestration_id, created_at);
+        "#,
     ];
 
     let current_version: usize = conn
@@ -162,7 +182,33 @@ mod tests {
         let version: i64 = conn
             .query_row("PRAGMA user_version", [], |row| row.get(0))
             .expect("read schema version");
-        assert_eq!(version, 2);
+        assert_eq!(version, 3);
+    }
+
+    #[test]
+    fn creates_local_orchestrator_persistence_schema() {
+        let conn = Connection::open_in_memory().expect("open database");
+        run_migrations(&conn).expect("run migrations");
+
+        let template_table: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'squad_templates'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("read table");
+        let step_columns: Vec<String> = conn
+            .prepare("PRAGMA table_info(orchestration_steps)")
+            .expect("prepare columns")
+            .query_map([], |row| row.get(1))
+            .expect("query columns")
+            .collect::<Result<_, _>>()
+            .expect("collect columns");
+
+        assert_eq!(template_table, 1);
+        assert!(step_columns.contains(&"cli_tool".to_string()));
+        assert!(step_columns.contains(&"prompt".to_string()));
+        assert!(step_columns.contains(&"depends_on_json".to_string()));
     }
 
     #[test]
