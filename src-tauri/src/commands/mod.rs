@@ -2,6 +2,7 @@ pub mod agents;
 pub mod fs;
 pub mod git;
 pub mod layouts;
+pub mod orchestrations;
 pub mod pty;
 pub mod sessions;
 pub mod settings;

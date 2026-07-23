@@ -1,5 +1,6 @@
 pub mod commands;
 pub mod db;
+pub mod repositories;
 
 use db::{
     connection::{backup_database, get_db_path, init_db, schema_version},
@@ -51,6 +52,14 @@ pub fn run() {
             commands::sessions::add_session_log,
             commands::sessions::list_session_logs,
             commands::sessions::export_session,
+            commands::orchestrations::save_orchestration,
+            commands::orchestrations::load_latest_orchestration,
+            commands::orchestrations::delete_orchestration,
+            commands::orchestrations::append_orchestration_event,
+            commands::orchestrations::list_orchestration_events,
+            commands::orchestrations::list_squad_templates,
+            commands::orchestrations::save_squad_template,
+            commands::orchestrations::delete_squad_template,
             commands::settings::get_setting,
             commands::settings::set_setting,
             commands::settings::list_settings,

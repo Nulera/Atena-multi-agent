@@ -33,13 +33,12 @@ import {
   processIdForStep,
   withStepProcess,
 } from "./orchestrator-domain"
+import { useOrchestratorPersistence } from "./use-orchestrator-persistence"
 
 interface OrchestratorPanelProps {
   workspaceId: string
   workspacePath: string
 }
-
-const customTemplatesKey = "atena:orchestrator:squad-templates"
 
 function createId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`
@@ -106,7 +105,6 @@ export function OrchestratorPanel({
   const [plan, setPlan] = useState<OrchestrationPlan | null>(null)
   const [selectedTemplate, setSelectedTemplate] =
     useState<SquadTemplate | null>(null)
-  const [customTemplates, setCustomTemplates] = useState<SquadTemplate[]>([])
   const [showSquads, setShowSquads] = useState(false)
   const [showStepForm, setShowStepForm] = useState(false)
   const [showTemplateForm, setShowTemplateForm] = useState(false)
@@ -118,6 +116,16 @@ export function OrchestratorPanel({
   const [templateDescription, setTemplateDescription] = useState("")
   const [runningSteps, setRunningSteps] = useState<Set<string>>(new Set())
   const { toast } = useToast()
+  const {
+    initialPlan,
+    customTemplates,
+    error: persistenceError,
+    clearError: clearPersistenceError,
+    persistPlan,
+    removePlan,
+    saveTemplate: savePersistedTemplate,
+    deleteTemplate: deletePersistedTemplate,
+  } = useOrchestratorPersistence(workspaceId)
 
   const squadTemplates = useMemo(
     () => [...defaultSquadTemplates, ...customTemplates],
@@ -125,15 +133,24 @@ export function OrchestratorPanel({
   )
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(customTemplatesKey)
-      if (!stored) return
-      const parsed: unknown = JSON.parse(stored)
-      if (Array.isArray(parsed)) setCustomTemplates(parsed as SquadTemplate[])
-    } catch (error) {
-      console.error("Failed to load squad templates:", error)
-    }
-  }, [])
+    if (!initialPlan) return
+    setPlan((current) => current ?? initialPlan)
+    setGoal((current) => current || initialPlan.goal)
+  }, [initialPlan])
+
+  useEffect(() => {
+    if (plan) persistPlan(plan)
+  }, [persistPlan, plan])
+
+  useEffect(() => {
+    if (!persistenceError) return
+    toast({
+      title: "falha na persistência local",
+      description: persistenceError,
+      variant: "danger",
+    })
+    clearPersistenceError()
+  }, [clearPersistenceError, persistenceError, toast])
 
   const runningCount =
     plan?.steps.filter((s) => s.status === "running").length ?? 0
@@ -214,7 +231,7 @@ export function OrchestratorPanel({
     toast({ title: "agente adicionado ao plano", variant: "success" })
   }, [stepPrompt, stepRole, stepTitle, stepTool, toast])
 
-  const saveSquadTemplate = useCallback(() => {
+  const saveSquadTemplate = useCallback(async () => {
     if (!plan?.steps.length || !templateName.trim()) return
     const template: SquadTemplate = {
       id: createId("custom-squad"),
@@ -227,29 +244,39 @@ export function OrchestratorPanel({
         ({ id: _id, status: _status, resultSummary: _summary, ...step }) => step
       ),
     }
-    const next = [...customTemplates, template]
-    setCustomTemplates(next)
-    localStorage.setItem(customTemplatesKey, JSON.stringify(next))
-    setTemplateName("")
-    setTemplateDescription("")
-    setShowTemplateForm(false)
-    toast({
-      title: "template de squad criado",
-      description: template.name,
-      variant: "success",
-    })
-  }, [customTemplates, plan, templateDescription, templateName, toast])
+    try {
+      await savePersistedTemplate(template)
+      setTemplateName("")
+      setTemplateDescription("")
+      setShowTemplateForm(false)
+      toast({
+        title: "template de squad criado",
+        description: template.name,
+        variant: "success",
+      })
+    } catch (error) {
+      toast({
+        title: "falha ao salvar template local",
+        description: String(error),
+        variant: "danger",
+      })
+    }
+  }, [plan, savePersistedTemplate, templateDescription, templateName, toast])
 
   const deleteTemplate = useCallback(
-    (templateId: string) => {
-      const next = customTemplates.filter(
-        (template) => template.id !== templateId
-      )
-      setCustomTemplates(next)
-      localStorage.setItem(customTemplatesKey, JSON.stringify(next))
-      if (selectedTemplate?.id === templateId) setSelectedTemplate(null)
+    async (templateId: string) => {
+      try {
+        await deletePersistedTemplate(templateId)
+        if (selectedTemplate?.id === templateId) setSelectedTemplate(null)
+      } catch (error) {
+        toast({
+          title: "falha ao excluir template local",
+          description: String(error),
+          variant: "danger",
+        })
+      }
     },
-    [customTemplates, selectedTemplate]
+    [deletePersistedTemplate, selectedTemplate, toast]
   )
 
   const runStep = useCallback(
@@ -381,14 +408,23 @@ export function OrchestratorPanel({
     [plan, toast]
   )
 
-  const resetPlan = useCallback(() => {
-    setPlan(null)
-    setSelectedTemplate(null)
-    setGoal("")
-    setShowSquads(false)
-    setShowStepForm(false)
-    setShowTemplateForm(false)
-  }, [])
+  const resetPlan = useCallback(async () => {
+    try {
+      if (plan) await removePlan(plan.id)
+      setPlan(null)
+      setSelectedTemplate(null)
+      setGoal("")
+      setShowSquads(false)
+      setShowStepForm(false)
+      setShowTemplateForm(false)
+    } catch (error) {
+      toast({
+        title: "falha ao excluir plano local",
+        description: String(error),
+        variant: "danger",
+      })
+    }
+  }, [plan, removePlan, toast])
 
   return (
     <div className="flex h-full flex-col">
