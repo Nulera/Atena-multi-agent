@@ -20,6 +20,24 @@ export interface OrchestrationPlan {
   steps: OrchestrationStep[]
 }
 
+export interface OrchestrationEvent {
+  id: string
+  orchestrationId: string
+  stepId: string | null
+  type: string
+  content: string
+  createdAt: string
+}
+
+export interface SquadTemplateRecord {
+  id: string
+  name: string
+  description: string
+  definitionJson: string
+  createdAt: string
+  updatedAt: string
+}
+
 export type SquadTemplateStep = Omit<
   OrchestrationStep,
   "id" | "status" | "resultSummary" | "processId"
