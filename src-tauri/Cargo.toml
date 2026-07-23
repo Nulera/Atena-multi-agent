@@ -1,10 +1,10 @@
 [package]
 name = "app"
-version = "0.1.3"
+version = "0.1.4"
 description = "Atena — Local-First Multi-Agent Control Center"
 authors = ["Atena Project"]
 license = ""
-repository = "https://github.com/Nulera/Atena-multi-agent"
+repository = "https://github.com/Gabriel-faustino-lab/Atena-multi-agent"
 edition = "2021"
 rust-version = "1.77.2"
 

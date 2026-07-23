@@ -102,7 +102,7 @@ src-tauri/
 ### Desenvolvimento
 
 ```powershell
-git clone https://github.com/Nulera/Atena-multi-agent.git
+git clone https://github.com/Gabriel-faustino-lab/Atena-multi-agent.git
 cd Atena-multi-agent
 npm install
 npm run tauri:dev
@@ -119,7 +119,7 @@ Os instaladores são gerados pelo Tauri em `src-tauri/target/release/bundle/`.
 ### Instalação no Windows
 
 Baixe o arquivo `Atena_<versão>_x64-setup.exe` na página de
-[Releases](https://github.com/Nulera/Atena-multi-agent/releases). O instalador
+[Releases](https://github.com/Gabriel-faustino-lab/Atena-multi-agent/releases). O instalador
 adiciona o Atena ao menu Iniciar e cria um atalho na área de trabalho.
 
 Após a aprovação do pacote no repositório comunitário do WinGet:
