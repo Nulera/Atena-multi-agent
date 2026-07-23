@@ -1,49 +1,27 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useState } from "react"
 import { ThemeProvider } from "@/lib/theme"
 import { ToastProvider } from "@/components/ui/toast"
 import { WindowTitlebar } from "@/components/layout/window-titlebar"
 import { UpdateManager } from "@/components/update-manager"
 import { WorkspaceSelection } from "@/features/workspaces/workspace-selection"
 import { WorkspaceView } from "@/features/workspaces/workspace-view"
-import {
-  listWorkspaces,
-  createWorkspace,
-  deleteWorkspace,
-} from "@/lib/db"
+import { useWorkspaces } from "@/features/workspaces/use-workspaces"
 import type { Workspace } from "@/types"
 
 function AppContent() {
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([])
+  const { workspaces, loading, create, remove, refresh } = useWorkspaces()
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(
     null
   )
-  const [loading, setLoading] = useState(true)
-
-  const refreshWorkspaces = useCallback(async () => {
-    try {
-      const list = await listWorkspaces()
-      setWorkspaces(list)
-    } catch (err) {
-      console.error("Failed to load workspaces:", err)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    refreshWorkspaces()
-  }, [refreshWorkspaces])
-
   const handleCreate = useCallback(
     async (name: string, path: string, description: string) => {
       try {
-        await createWorkspace(name, path, description)
-        await refreshWorkspaces()
+        await create(name, path, description)
       } catch (err) {
         console.error("Failed to create workspace:", err)
       }
     },
-    [refreshWorkspaces]
+    [create]
   )
 
   const handleOpen = useCallback((workspace: Workspace) => {
@@ -53,19 +31,18 @@ function AppContent() {
   const handleRemove = useCallback(
     async (id: string) => {
       try {
-        await deleteWorkspace(id)
-        await refreshWorkspaces()
+        await remove(id)
       } catch (err) {
         console.error("Failed to delete workspace:", err)
       }
     },
-    [refreshWorkspaces]
+    [remove]
   )
 
   const handleBack = useCallback(() => {
     setActiveWorkspace(null)
-    refreshWorkspaces()
-  }, [refreshWorkspaces])
+    void refresh()
+  }, [refresh])
 
   if (loading) {
     return (

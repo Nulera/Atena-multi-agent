@@ -12,6 +12,7 @@ import {
   onProcessOutput,
   onProcessExit,
 } from "@/lib/pty"
+import { detectCli, stripAnsi } from "@/features/terminal/terminal-domain"
 import { createSession, updateSession, addSessionLog } from "@/lib/db"
 import { useTheme } from "@/lib/theme"
 import { Button } from "@/components/ui/button"
@@ -42,21 +43,6 @@ export interface TerminalActivity {
   status: TerminalStatus
   cli: string
   resumeCommand?: string
-}
-
-function commandCli(commandLine: string) {
-  const command = commandLine.trim().replace(/^[&.]\s+/, "")
-  const knownCli = command.match(/(?:^|[^a-z0-9-])(claude(?:-code)?|claudecode|codex(?:-cli)?|openai-codex|opencode)(?=\s|$)/i)?.[1]
-  if (knownCli) {
-    const normalized = knownCli.toLowerCase()
-    if (normalized.startsWith("claude")) return "claude"
-    if (normalized.includes("codex")) return "codex"
-    return "opencode"
-  }
-  const firstToken = command.match(/^(?:"([^"]+)"|'([^']+)'|(\S+))/)
-  const executable = firstToken?.[1] || firstToken?.[2] || firstToken?.[3]
-  if (!executable) return "PowerShell"
-  return executable.split(/[\\/]/).pop()?.replace(/\.(exe|cmd|bat|ps1)$/i, "") || "PowerShell"
 }
 
 export function TerminalView({
@@ -179,7 +165,7 @@ export function TerminalView({
     }
 
     try {
-      const initialCli = command?.trim() ? commandCli(command) : "PowerShell"
+      const initialCli = command?.trim() ? detectCli(command) : "PowerShell"
       const initialResumeCommand = /^(claude|codex|opencode)$/i.test(initialCli)
         ? command?.trim() || initialCli.toLowerCase()
         : ""
@@ -218,7 +204,7 @@ export function TerminalView({
       const unlistenOutput = await onProcessOutput(info.id, (data) => {
         if (disposedRef.current) return
         term.write(data)
-        const plainOutput = data.replace(/\x1b\[[0-?]*[ -\/]*[@-~]/g, "")
+        const plainOutput = stripAnsi(data)
         outputTailRef.current = `${outputTailRef.current}${plainOutput}`.slice(-500)
         const hasKnownInteractiveCli = /^(claude|codex|opencode)$/i.test(currentCliRef.current)
         if (!hasKnownInteractiveCli) {
@@ -256,10 +242,7 @@ export function TerminalView({
       if (disposedRef.current || termInstanceRef.current !== term) return
       if (attached.scrollback) {
         term.write(attached.scrollback)
-        const plainScrollback = attached.scrollback.replace(
-          /\x1b\[[0-?]*[ -\/]*[@-~]/g,
-          ""
-        )
+        const plainScrollback = stripAnsi(attached.scrollback)
         outputTailRef.current = plainScrollback.slice(-500)
         if (/claude\s+code/i.test(outputTailRef.current)) {
           reportActivity("running", "claude")
@@ -342,7 +325,7 @@ export function TerminalView({
           if (character === "\r" || character === "\n") {
             const commandLine = inputBufferRef.current.trim()
             if (commandLine) {
-              const cli = commandCli(commandLine)
+              const cli = detectCli(commandLine)
               const resumeCommand = /^(claude|codex|opencode)$/i.test(cli)
                 ? commandLine
                 : ""

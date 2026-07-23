@@ -10,6 +10,7 @@ export interface OrchestrationStep {
   status: "pending" | "running" | "waiting" | "completed" | "failed"
   dependsOn?: number[]
   resultSummary?: string
+  processId?: string
 }
 
 export interface OrchestrationPlan {
@@ -21,7 +22,7 @@ export interface OrchestrationPlan {
 
 export type SquadTemplateStep = Omit<
   OrchestrationStep,
-  "id" | "status" | "resultSummary"
+  "id" | "status" | "resultSummary" | "processId"
 >
 
 export interface SquadTemplate {

@@ -28,6 +28,11 @@ import {
 } from "./orchestrator-types"
 import { useToast } from "@/components/ui/toast"
 import { spawnProcess, killProcess } from "@/lib/pty"
+import {
+  clearStepProcess,
+  processIdForStep,
+  withStepProcess,
+} from "./orchestrator-domain"
 
 interface OrchestratorPanelProps {
   workspaceId: string
@@ -281,7 +286,12 @@ export function OrchestratorPanel({
       const command = `${step.cliTool} "${fullPrompt.replace(/"/g, '\\"')}"`
 
       try {
-        await spawnProcess(command, workspacePath, step.id)
+        const process = await spawnProcess(command, workspacePath, step.id)
+        setPlan((current) =>
+          current
+            ? withStepProcess(current, step.id, process.id)
+            : current
+        )
         toast({
           title: `step ${step.order + 1} started`,
           description: `${cliToolLabels[step.cliTool]} → ${step.title}`,
@@ -339,22 +349,26 @@ export function OrchestratorPanel({
 
   const stopStep = useCallback(
     async (stepId: string) => {
+      const processId = processIdForStep(plan, stepId)
+      if (!processId) {
+        toast({
+          title: "error",
+          description: "processo da etapa não encontrado",
+          variant: "danger",
+        })
+        return
+      }
       try {
-        await killProcess(stepId)
+        await killProcess(processId)
         setPlan((prev) => {
           if (!prev) return prev
-          return {
-            ...prev,
-            steps: prev.steps.map((s) =>
-              s.id === stepId ? { ...s, status: "pending" } : s
-            ),
-          }
+          return clearStepProcess(prev, stepId)
         })
       } catch (err) {
         toast({ title: "error", description: String(err), variant: "danger" })
       }
     },
-    [toast]
+    [plan, toast]
   )
 
   const resetPlan = useCallback(() => {

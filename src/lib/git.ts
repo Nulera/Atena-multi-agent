@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core"
+import { invokeCommand } from "@/lib/tauri-command"
 
 export interface GitStatus {
   gitAvailable: boolean
@@ -17,23 +17,35 @@ export interface GitFile {
 }
 
 export async function gitStatus(path: string): Promise<GitStatus> {
-  return await invoke<GitStatus>("git_status", { path })
+  return await invokeCommand<GitStatus>("git_status", { path }, "git.status")
 }
 
 export async function gitDiff(path: string, file?: string): Promise<string> {
-  return await invoke<string>("git_diff", { path, file: file ?? null })
+  return await invokeCommand<string>(
+    "git_diff",
+    { path, file: file ?? null },
+    "git.diff"
+  )
 }
 
 export async function gitDiffStaged(path: string): Promise<string> {
-  return await invoke<string>("git_diff_staged", { path })
+  return await invokeCommand<string>(
+    "git_diff_staged",
+    { path },
+    "git.diffStaged"
+  )
 }
 
 export async function gitCurrentBranch(path: string): Promise<string> {
-  return await invoke<string>("git_current_branch", { path })
+  return await invokeCommand<string>(
+    "git_current_branch",
+    { path },
+    "git.currentBranch"
+  )
 }
 
 export async function gitInit(path: string): Promise<string> {
-  return await invoke<string>("git_init", { path })
+  return await invokeCommand<string>("git_init", { path }, "git.init")
 }
 
 export async function gitSetIdentity(
@@ -41,21 +53,33 @@ export async function gitSetIdentity(
   name: string,
   email: string
 ): Promise<string> {
-  return await invoke<string>("git_set_identity", { path, name, email })
+  return await invokeCommand<string>(
+    "git_set_identity",
+    { path, name, email },
+    "git.setIdentity"
+  )
 }
 
 export async function gitSetRemote(path: string, url: string): Promise<string> {
-  return await invoke<string>("git_set_remote", { path, url })
+  return await invokeCommand<string>(
+    "git_set_remote",
+    { path, url },
+    "git.setRemote"
+  )
 }
 
 export async function gitCommitAll(path: string, message: string): Promise<string> {
-  return await invoke<string>("git_commit_all", { path, message })
+  return await invokeCommand<string>(
+    "git_commit_all",
+    { path, message },
+    "git.commitAll"
+  )
 }
 
 export async function gitPull(path: string): Promise<string> {
-  return await invoke<string>("git_pull", { path })
+  return await invokeCommand<string>("git_pull", { path }, "git.pull")
 }
 
 export async function gitPush(path: string): Promise<string> {
-  return await invoke<string>("git_push", { path })
+  return await invokeCommand<string>("git_push", { path }, "git.push")
 }

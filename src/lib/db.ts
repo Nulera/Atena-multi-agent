@@ -1,5 +1,5 @@
-import { invoke } from "@tauri-apps/api/core"
 import { open } from "@tauri-apps/plugin-dialog"
+import { invokeCommand } from "@/lib/tauri-command"
 import type {
   Workspace,
   Agent,
@@ -12,11 +12,11 @@ import type {
 // ---- Filesystem ----
 
 export async function validatePath(path: string): Promise<boolean> {
-  return await invoke<boolean>("validate_path", { path })
+  return await invokeCommand<boolean>("validate_path", { path }, "fs.validatePath")
 }
 
 export async function pathExists(path: string): Promise<boolean> {
-  return await invoke<boolean>("path_exists", { path })
+  return await invokeCommand<boolean>("path_exists", { path }, "fs.pathExists")
 }
 
 export async function pickFolder(): Promise<string | null> {
@@ -27,7 +27,11 @@ export async function pickFolder(): Promise<string | null> {
 // ---- Workspaces ----
 
 export async function listWorkspaces(): Promise<Workspace[]> {
-  return await invoke<Workspace[]>("list_workspaces")
+  return await invokeCommand<Workspace[]>(
+    "list_workspaces",
+    undefined,
+    "workspace.list"
+  )
 }
 
 export async function createWorkspace(
@@ -35,11 +39,11 @@ export async function createWorkspace(
   path: string,
   description: string
 ): Promise<Workspace> {
-  return await invoke<Workspace>("create_workspace", {
-    name,
-    path,
-    description,
-  })
+  return await invokeCommand<Workspace>(
+    "create_workspace",
+    { name, path, description },
+    "workspace.create"
+  )
 }
 
 export async function updateWorkspace(
@@ -50,17 +54,21 @@ export async function updateWorkspace(
     description?: string
   }
 ): Promise<void> {
-  await invoke("update_workspace", { id, ...data })
+  await invokeCommand("update_workspace", { id, ...data }, "workspace.update")
 }
 
 export async function deleteWorkspace(id: string): Promise<void> {
-  await invoke("delete_workspace", { id })
+  await invokeCommand("delete_workspace", { id }, "workspace.delete")
 }
 
 // ---- Agents ----
 
 export async function listAgents(workspaceId: string): Promise<Agent[]> {
-  return await invoke<Agent[]>("list_agents", { workspaceId })
+  return await invokeCommand<Agent[]>(
+    "list_agents",
+    { workspaceId },
+    "agent.list"
+  )
 }
 
 export async function createAgent(
@@ -74,7 +82,7 @@ export async function createAgent(
     workingDirectory: string
   }
 ): Promise<Agent> {
-  return await invoke<Agent>("create_agent", data)
+  return await invokeCommand<Agent>("create_agent", data, "agent.create")
 }
 
 export async function updateAgent(
@@ -89,11 +97,11 @@ export async function updateAgent(
     status?: string
   }
 ): Promise<void> {
-  await invoke("update_agent", { id, ...data })
+  await invokeCommand("update_agent", { id, ...data }, "agent.update")
 }
 
 export async function deleteAgent(id: string): Promise<void> {
-  await invoke("delete_agent", { id })
+  await invokeCommand("delete_agent", { id }, "agent.delete")
 }
 
 // ---- Sessions ----
@@ -102,7 +110,11 @@ export async function listSessions(
   workspaceId?: string,
   agentId?: string
 ): Promise<Session[]> {
-  return await invoke<Session[]>("list_sessions", { workspaceId, agentId })
+  return await invokeCommand<Session[]>(
+    "list_sessions",
+    { workspaceId, agentId },
+    "session.list"
+  )
 }
 
 export async function createSession(
@@ -110,22 +122,22 @@ export async function createSession(
   agentId: string,
   name: string
 ): Promise<Session> {
-  return await invoke<Session>("create_session", {
-    workspaceId,
-    agentId,
-    name,
-  })
+  return await invokeCommand<Session>(
+    "create_session",
+    { workspaceId, agentId, name },
+    "session.create"
+  )
 }
 
 export async function updateSession(
   id: string,
   data: { name?: string; status?: string }
 ): Promise<void> {
-  await invoke("update_session", { id, ...data })
+  await invokeCommand("update_session", { id, ...data }, "session.update")
 }
 
 export async function deleteSession(id: string): Promise<void> {
-  await invoke("delete_session", { id })
+  await invokeCommand("delete_session", { id }, "session.delete")
 }
 
 // ---- Session Logs ----
@@ -135,17 +147,21 @@ export async function addSessionLog(
   logType: string,
   content: string
 ): Promise<SessionLog> {
-  return await invoke<SessionLog>("add_session_log", {
-    sessionId,
-    logType,
-    content,
-  })
+  return await invokeCommand<SessionLog>(
+    "add_session_log",
+    { sessionId, logType, content },
+    "session.addLog"
+  )
 }
 
 export async function listSessionLogs(
   sessionId: string
 ): Promise<SessionLog[]> {
-  return await invoke<SessionLog[]>("list_session_logs", { sessionId })
+  return await invokeCommand<SessionLog[]>(
+    "list_session_logs",
+    { sessionId },
+    "session.listLogs"
+  )
 }
 
 export async function exportSession(
@@ -153,27 +169,43 @@ export async function exportSession(
   path: string,
   format: "markdown" | "json"
 ): Promise<string> {
-  return await invoke<string>("export_session", { sessionId, path, format })
+  return await invokeCommand<string>(
+    "export_session",
+    { sessionId, path, format },
+    "session.export"
+  )
 }
 
 // ---- Settings ----
 
 export async function getSetting(key: string): Promise<string | null> {
-  return await invoke<string | null>("get_setting", { key })
+  return await invokeCommand<string | null>(
+    "get_setting",
+    { key },
+    "settings.get"
+  )
 }
 
 export async function setSetting(key: string, value: string): Promise<void> {
-  await invoke("set_setting", { key, value })
+  await invokeCommand("set_setting", { key, value }, "settings.set")
 }
 
 export async function listSettings(): Promise<Setting[]> {
-  return await invoke<Setting[]>("list_settings")
+  return await invokeCommand<Setting[]>(
+    "list_settings",
+    undefined,
+    "settings.list"
+  )
 }
 
 // ---- Layouts ----
 
 export async function listLayouts(workspaceId: string): Promise<Layout[]> {
-  return await invoke<Layout[]>("list_layouts", { workspaceId })
+  return await invokeCommand<Layout[]>(
+    "list_layouts",
+    { workspaceId },
+    "layout.list"
+  )
 }
 
 export async function saveLayout(
@@ -182,20 +214,28 @@ export async function saveLayout(
   layoutJson: string,
   isDefault?: boolean
 ): Promise<Layout> {
-  return await invoke<Layout>("save_layout", {
-    workspaceId,
-    name,
-    layoutJson,
-    isDefault: isDefault ?? false,
-  })
+  return await invokeCommand<Layout>(
+    "save_layout",
+    {
+      workspaceId,
+      name,
+      layoutJson,
+      isDefault: isDefault ?? false,
+    },
+    "layout.save"
+  )
 }
 
 export async function getDefaultLayout(
   workspaceId: string
 ): Promise<Layout | null> {
-  return await invoke<Layout | null>("get_default_layout", { workspaceId })
+  return await invokeCommand<Layout | null>(
+    "get_default_layout",
+    { workspaceId },
+    "layout.getDefault"
+  )
 }
 
 export async function deleteLayout(id: string): Promise<void> {
-  await invoke("delete_layout", { id })
+  await invokeCommand("delete_layout", { id }, "layout.delete")
 }
