@@ -69,6 +69,7 @@ pub fn create_agent(
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub fn update_agent(
     id: String,
     name: Option<String>,

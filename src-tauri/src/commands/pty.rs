@@ -9,6 +9,14 @@ use uuid::Uuid;
 
 const MAX_SCROLLBACK: usize = 1024 * 1024;
 
+fn ceil_char_boundary(value: &str, index: usize) -> usize {
+    let mut boundary = index.min(value.len());
+    while boundary < value.len() && !value.is_char_boundary(boundary) {
+        boundary += 1;
+    }
+    boundary
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProcessInfo {
@@ -146,7 +154,7 @@ pub fn spawn_process(
                     entry.scrollback.push_str(&data);
                     if entry.scrollback.len() > MAX_SCROLLBACK {
                         let split = entry.scrollback.len() - MAX_SCROLLBACK;
-                        let split = entry.scrollback.ceil_char_boundary(split);
+                        let split = ceil_char_boundary(&entry.scrollback, split);
                         entry.scrollback.drain(..split);
                     }
                     entry.attached
@@ -304,4 +312,20 @@ pub fn get_scrollback(id: String) -> Result<String, String> {
         .scrollback
         .clone();
     Ok(scrollback)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ceil_char_boundary;
+
+    #[test]
+    fn finds_the_next_boundary_inside_a_multibyte_character() {
+        assert_eq!(ceil_char_boundary("aéz", 2), 3);
+    }
+
+    #[test]
+    fn preserves_existing_boundaries_and_clamps_to_the_string() {
+        assert_eq!(ceil_char_boundary("aéz", 1), 1);
+        assert_eq!(ceil_char_boundary("aéz", usize::MAX), 4);
+    }
 }
