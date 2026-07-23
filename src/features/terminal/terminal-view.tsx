@@ -1,4 +1,10 @@
-import { useEffect, useRef, useCallback, useState, type ReactNode } from "react"
+import {
+  useEffect,
+  useRef,
+  useCallback,
+  useReducer,
+  type ReactNode,
+} from "react"
 import { Terminal } from "@xterm/xterm"
 import { FitAddon } from "@xterm/addon-fit"
 import { WebLinksAddon } from "@xterm/addon-web-links"
@@ -12,7 +18,14 @@ import {
   onProcessOutput,
   onProcessExit,
 } from "@/lib/pty"
-import { detectCli, stripAnsi } from "@/features/terminal/terminal-domain"
+import {
+  detectCli,
+  initialTerminalState,
+  stripAnsi,
+  transitionTerminal,
+  type TerminalEvent,
+  type TerminalState,
+} from "@/features/terminal/terminal-domain"
 import { createSession, updateSession, addSessionLog } from "@/lib/db"
 import { useTheme } from "@/lib/theme"
 import { Button } from "@/components/ui/button"
@@ -67,12 +80,15 @@ export function TerminalView({
   const inputBufferRef = useRef("")
   const pendingInputRef = useRef("")
   const outputTailRef = useRef("")
-  const currentCliRef = useRef("PowerShell")
-  const currentStatusRef = useRef<TerminalStatus>("open")
-  const resumeCommandRef = useRef("")
+  const terminalStateRef = useRef<TerminalState>(initialTerminalState)
   const inputEscapeStateRef = useRef<"none" | "escape" | "csi" | "osc">("none")
-  const [isRunning, setIsRunning] = useState(false)
+  const [terminalState, dispatchTerminalEvent] = useReducer(
+    transitionTerminal,
+    initialTerminalState
+  )
   const { theme } = useTheme()
+  const isRunning =
+    terminalState.processId !== null && terminalState.status !== "stopping"
 
   const focusTerminal = useCallback(() => {
     requestAnimationFrame(() => {
@@ -82,16 +98,30 @@ export function TerminalView({
     })
   }, [])
 
-  const reportActivity = useCallback(
-    (
-      status: TerminalStatus,
-      cli = currentCliRef.current,
-      resumeCommand = resumeCommandRef.current
-    ) => {
-      currentStatusRef.current = status
-      currentCliRef.current = cli
-      resumeCommandRef.current = resumeCommand
-      onActivityChange?.({ status, cli, resumeCommand })
+  const sendTerminalEvent = useCallback(
+    (event: TerminalEvent) => {
+      const nextState = transitionTerminal(terminalStateRef.current, event)
+      if (nextState === terminalStateRef.current) return
+
+      terminalStateRef.current = nextState
+      dispatchTerminalEvent(event)
+      const status: TerminalStatus =
+        nextState.status === "idle"
+          ? "idle"
+          : nextState.status === "stopping" ||
+              nextState.status === "stopped" ||
+              nextState.status === "failed"
+            ? "stopped"
+            : nextState.status === "open" ||
+                (nextState.status === "starting" &&
+                  nextState.cli === "PowerShell")
+              ? "open"
+              : "running"
+      onActivityChange?.({
+        status,
+        cli: nextState.cli,
+        resumeCommand: nextState.resumeCommand,
+      })
     },
     [onActivityChange]
   )
@@ -169,11 +199,11 @@ export function TerminalView({
       const initialResumeCommand = /^(claude|codex|opencode)$/i.test(initialCli)
         ? command?.trim() || initialCli.toLowerCase()
         : ""
-      reportActivity(
-        command?.trim() ? "running" : "open",
-        initialCli,
-        initialResumeCommand
-      )
+      sendTerminalEvent({
+        type: "START",
+        cli: initialCli,
+        resumeCommand: initialResumeCommand,
+      })
       // Always spawn an interactive shell; if command is set, it gets sent to the shell
       const info = await spawnProcess(command || "", workingDir, agentId)
       if (disposedRef.current || termInstanceRef.current !== term) {
@@ -181,7 +211,7 @@ export function TerminalView({
         return
       }
       processIdRef.current = info.id
-      setIsRunning(true)
+      sendTerminalEvent({ type: "ATTACHED", processId: info.id })
       focusTerminal()
       resizeProcess(info.id, term.rows, term.cols).catch(() => {})
 
@@ -209,22 +239,22 @@ export function TerminalView({
           -500
         )
         const hasKnownInteractiveCli = /^(claude|codex|opencode)$/i.test(
-          currentCliRef.current
+          terminalStateRef.current.cli
         )
         if (!hasKnownInteractiveCli) {
           if (/claude\s+code/i.test(outputTailRef.current)) {
-            reportActivity("running", "claude")
+            sendTerminalEvent({ type: "ACTIVITY", cli: "claude" })
           } else if (
             /(?:openai\s+codex|codex\s+cli)/i.test(outputTailRef.current)
           ) {
-            reportActivity("running", "codex")
+            sendTerminalEvent({ type: "ACTIVITY", cli: "codex" })
           } else if (/\bopencode\b/i.test(outputTailRef.current)) {
-            reportActivity("running", "opencode")
+            sendTerminalEvent({ type: "ACTIVITY", cli: "opencode" })
           }
         }
         if (/(?:^|[\r\n])PS [^\r\n>]*>\s*$/.test(outputTailRef.current)) {
           inputBufferRef.current = ""
-          reportActivity("idle", "PowerShell")
+          sendTerminalEvent({ type: "PROMPT" })
         }
         if (sessionIdRef.current) {
           addSessionLog(sessionIdRef.current, "output", data).catch(() => {})
@@ -235,8 +265,7 @@ export function TerminalView({
         if (disposedRef.current) return
         term.write("\r\n\x1b[31m[exit]\x1b[0m\r\n")
         processIdRef.current = null
-        setIsRunning(false)
-        reportActivity("stopped")
+        sendTerminalEvent({ type: "EXITED" })
         if (sessionIdRef.current) {
           updateSession(sessionIdRef.current, { status: "finished" }).catch(
             () => {}
@@ -253,22 +282,22 @@ export function TerminalView({
         const plainScrollback = stripAnsi(attached.scrollback)
         outputTailRef.current = plainScrollback.slice(-500)
         if (/claude\s+code/i.test(outputTailRef.current)) {
-          reportActivity("running", "claude")
+          sendTerminalEvent({ type: "ACTIVITY", cli: "claude" })
         } else if (
           /(?:openai\s+codex|codex\s+cli)/i.test(outputTailRef.current)
         ) {
-          reportActivity("running", "codex")
+          sendTerminalEvent({ type: "ACTIVITY", cli: "codex" })
         } else if (/\bopencode\b/i.test(outputTailRef.current)) {
-          reportActivity("running", "opencode")
+          sendTerminalEvent({ type: "ACTIVITY", cli: "opencode" })
         }
         if (/(?:^|[\r\n])PS [^\r\n>]*>\s*$/.test(outputTailRef.current)) {
-          reportActivity("idle", "PowerShell")
+          sendTerminalEvent({ type: "PROMPT" })
         }
       }
     } catch (err) {
       if (!disposedRef.current) {
         term.write(`\x1b[31merr: ${err}\x1b[0m\r\n`)
-        reportActivity("stopped")
+        sendTerminalEvent({ type: "FAILED", error: String(err) })
       }
       if (sessionIdRef.current) {
         addSessionLog(sessionIdRef.current, "error", String(err)).catch(
@@ -284,7 +313,7 @@ export function TerminalView({
     workspaceId,
     agentName,
     focusTerminal,
-    reportActivity,
+    sendTerminalEvent,
   ])
 
   // Initialize terminal + auto-start shell
@@ -321,7 +350,7 @@ export function TerminalView({
 
     // Pipe user input to process
     dataDisposableRef.current = term.onData((data) => {
-      if (currentStatusRef.current !== "running") {
+      if (terminalStateRef.current.status !== "running") {
         for (const character of data) {
           if (inputEscapeStateRef.current === "csi") {
             if (character >= "@" && character <= "~") {
@@ -349,7 +378,11 @@ export function TerminalView({
               const resumeCommand = /^(claude|codex|opencode)$/i.test(cli)
                 ? commandLine
                 : ""
-              reportActivity("running", cli, resumeCommand)
+              sendTerminalEvent({
+                type: "ACTIVITY",
+                cli,
+                resumeCommand,
+              })
             }
             inputBufferRef.current = ""
           } else if (character === "\u0003") {
@@ -434,10 +467,10 @@ export function TerminalView({
 
   const stopProcess = useCallback(async () => {
     if (processIdRef.current) {
+      sendTerminalEvent({ type: "STOP" })
       await killProcess(processIdRef.current)
       processIdRef.current = null
-      setIsRunning(false)
-      reportActivity("stopped")
+      sendTerminalEvent({ type: "EXITED" })
       if (!disposedRef.current) {
         termInstanceRef.current?.write("\r\n\x1b[33m[killed]\x1b[0m\r\n")
       }
@@ -447,7 +480,7 @@ export function TerminalView({
         )
       }
     }
-  }, [reportActivity])
+  }, [sendTerminalEvent])
 
   const clearTerminal = useCallback(() => {
     if (!disposedRef.current) {
