@@ -39,6 +39,22 @@ jobs:
         with:
           tagName: v__VERSION__
           releaseName: "Atena v__VERSION__"
-          releaseBody: "See the assets below to download and install this version."
+          releaseBody: |
+            ## O que mudou desde a v0.1.4
+
+            - O orquestrador agora persiste planos, etapas, eventos e templates personalizados no SQLite local.
+            - Planos e squads voltam após reiniciar o Atena, sem banco externo, conta ou API de dados.
+            - Templates antigos do localStorage são migrados uma única vez com validação e sem duplicação.
+            - O ciclo de vida dos terminais PTY e o armazenamento de processos foram encapsulados para reduzir estados inconsistentes.
+
+            ## Melhorias
+
+            - Operações locais tipadas entre React, Tauri e Rust, com transações para gravações de múltiplas etapas.
+            - Mensagens de erro de persistência mais claras, sem exibir `[object Object]`.
+            - Correção da gravação de etapas novas sem resumo, evitando falhas de restrição no SQLite.
+            - Novos testes de migração, gateway, repositório e integração do hook de persistência.
+
+            Consulte abaixo o changelog completo e os instaladores desta versão.
+          generateReleaseNotes: true
           releaseDraft: false
           prerelease: false
