@@ -2,7 +2,7 @@ use portable_pty::{native_pty_system, Child, CommandBuilder, MasterPty, PtySize}
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io::{Read, Write};
-use std::sync::Mutex;
+use std::sync::{LockResult, Mutex, MutexGuard, OnceLock};
 use std::thread;
 use tauri::{AppHandle, Emitter};
 use uuid::Uuid;
@@ -42,10 +42,26 @@ struct ProcessEntry {
     running: bool,
 }
 
-static PROCESSES: Mutex<Option<HashMap<String, Mutex<ProcessEntry>>>> = Mutex::new(None);
+struct ProcessManager {
+    entries: Mutex<HashMap<String, Mutex<ProcessEntry>>>,
+}
 
-fn processes() -> &'static Mutex<Option<HashMap<String, Mutex<ProcessEntry>>>> {
-    &PROCESSES
+impl ProcessManager {
+    fn new() -> Self {
+        Self {
+            entries: Mutex::new(HashMap::new()),
+        }
+    }
+
+    fn lock(&self) -> LockResult<MutexGuard<'_, HashMap<String, Mutex<ProcessEntry>>>> {
+        self.entries.lock()
+    }
+}
+
+static PROCESS_MANAGER: OnceLock<ProcessManager> = OnceLock::new();
+
+fn process_manager() -> &'static ProcessManager {
+    PROCESS_MANAGER.get_or_init(ProcessManager::new)
 }
 
 fn process_info(id: String, entry: &ProcessEntry, include_scrollback: bool) -> ProcessInfo {
@@ -127,12 +143,10 @@ pub fn spawn_process(
     let info = process_info(id.clone(), &entry, false);
 
     {
-        let mut store = processes()
+        let mut store = process_manager()
             .lock()
             .map_err(|error| format!("Process store lock failed: {error}"))?;
-        store
-            .get_or_insert_with(HashMap::new)
-            .insert(id.clone(), Mutex::new(entry));
+        store.insert(id.clone(), Mutex::new(entry));
     }
 
     let reader_id = id.clone();
@@ -144,12 +158,8 @@ pub fn spawn_process(
                 Ok(count) => count,
             };
             let data = String::from_utf8_lossy(&buffer[..count]).into_owned();
-            let should_emit = if let Ok(mut store) = processes().lock() {
-                if let Some(entry) = store
-                    .as_mut()
-                    .and_then(|map| map.get(&reader_id))
-                    .and_then(|entry| entry.lock().ok())
-                {
+            let should_emit = if let Ok(store) = process_manager().lock() {
+                if let Some(entry) = store.get(&reader_id).and_then(|entry| entry.lock().ok()) {
                     let mut entry = entry;
                     entry.scrollback.push_str(&data);
                     if entry.scrollback.len() > MAX_SCROLLBACK {
@@ -169,12 +179,8 @@ pub fn spawn_process(
             }
         }
 
-        if let Ok(mut store) = processes().lock() {
-            if let Some(entry) = store
-                .as_mut()
-                .and_then(|map| map.get(&reader_id))
-                .and_then(|entry| entry.lock().ok())
-            {
+        if let Ok(store) = process_manager().lock() {
+            if let Some(entry) = store.get(&reader_id).and_then(|entry| entry.lock().ok()) {
                 let mut entry = entry;
                 entry.running = false;
             }
@@ -191,12 +197,11 @@ pub fn spawn_process(
 
 #[tauri::command]
 pub fn write_to_process(id: String, data: String) -> Result<(), String> {
-    let store = processes()
+    let store = process_manager()
         .lock()
         .map_err(|error| format!("Process store lock failed: {error}"))?;
     let entry = store
-        .as_ref()
-        .and_then(|map| map.get(&id))
+        .get(&id)
         .ok_or_else(|| "Process not found".to_string())?;
     let mut entry = entry
         .lock()
@@ -210,12 +215,11 @@ pub fn write_to_process(id: String, data: String) -> Result<(), String> {
 
 #[tauri::command]
 pub fn resize_process(id: String, rows: u16, cols: u16) -> Result<(), String> {
-    let store = processes()
+    let store = process_manager()
         .lock()
         .map_err(|error| format!("Process store lock failed: {error}"))?;
     let entry = store
-        .as_ref()
-        .and_then(|map| map.get(&id))
+        .get(&id)
         .ok_or_else(|| "Process not found".to_string())?;
     let entry = entry
         .lock()
@@ -233,12 +237,11 @@ pub fn resize_process(id: String, rows: u16, cols: u16) -> Result<(), String> {
 
 #[tauri::command]
 pub fn detach_process(id: String) -> Result<(), String> {
-    let store = processes()
+    let store = process_manager()
         .lock()
         .map_err(|error| format!("Process store lock failed: {error}"))?;
     let entry = store
-        .as_ref()
-        .and_then(|map| map.get(&id))
+        .get(&id)
         .ok_or_else(|| "Process not found".to_string())?;
     entry
         .lock()
@@ -249,12 +252,11 @@ pub fn detach_process(id: String) -> Result<(), String> {
 
 #[tauri::command]
 pub fn attach_process(id: String) -> Result<ProcessInfo, String> {
-    let store = processes()
+    let store = process_manager()
         .lock()
         .map_err(|error| format!("Process store lock failed: {error}"))?;
     let entry = store
-        .as_ref()
-        .and_then(|map| map.get(&id))
+        .get(&id)
         .ok_or_else(|| "Process not found".to_string())?;
     let mut entry = entry
         .lock()
@@ -265,15 +267,13 @@ pub fn attach_process(id: String) -> Result<ProcessInfo, String> {
 
 #[tauri::command]
 pub fn list_processes() -> Result<Vec<ProcessInfo>, String> {
-    let store = processes()
+    let store = process_manager()
         .lock()
         .map_err(|error| format!("Process store lock failed: {error}"))?;
     let mut result = Vec::new();
-    if let Some(map) = store.as_ref() {
-        for (id, entry) in map {
-            if let Ok(entry) = entry.lock() {
-                result.push(process_info(id.clone(), &entry, false));
-            }
+    for (id, entry) in store.iter() {
+        if let Ok(entry) = entry.lock() {
+            result.push(process_info(id.clone(), &entry, false));
         }
     }
     Ok(result)
@@ -281,12 +281,11 @@ pub fn list_processes() -> Result<Vec<ProcessInfo>, String> {
 
 #[tauri::command]
 pub fn kill_process(id: String) -> Result<(), String> {
-    let mut store = processes()
+    let mut store = process_manager()
         .lock()
         .map_err(|error| format!("Process store lock failed: {error}"))?;
     let entry = store
-        .as_mut()
-        .and_then(|map| map.remove(&id))
+        .remove(&id)
         .ok_or_else(|| "Process not found".to_string())?;
     let mut entry = entry
         .into_inner()
@@ -299,12 +298,11 @@ pub fn kill_process(id: String) -> Result<(), String> {
 
 #[tauri::command]
 pub fn get_scrollback(id: String) -> Result<String, String> {
-    let store = processes()
+    let store = process_manager()
         .lock()
         .map_err(|error| format!("Process store lock failed: {error}"))?;
     let entry = store
-        .as_ref()
-        .and_then(|map| map.get(&id))
+        .get(&id)
         .ok_or_else(|| "Process not found".to_string())?;
     let scrollback = entry
         .lock()
@@ -316,7 +314,14 @@ pub fn get_scrollback(id: String) -> Result<String, String> {
 
 #[cfg(test)]
 mod tests {
-    use super::ceil_char_boundary;
+    use super::{ceil_char_boundary, ProcessManager};
+
+    #[test]
+    fn process_manager_starts_with_an_empty_store() {
+        let manager = ProcessManager::new();
+
+        assert!(manager.lock().unwrap().is_empty());
+    }
 
     #[test]
     fn finds_the_next_boundary_inside_a_multibyte_character() {

@@ -71,8 +71,15 @@ export function transitionTerminal(
         resumeCommand: event.resumeCommand ?? "",
       }
     case "ATTACHED":
-      return { ...state, status: "running", processId: event.processId }
+      return {
+        ...state,
+        status: state.cli === "PowerShell" ? "open" : "running",
+        processId: event.processId,
+      }
     case "PROMPT":
+      if (["stopping", "stopped", "failed"].includes(state.status)) {
+        return state
+      }
       return {
         ...state,
         status: "idle",
@@ -80,6 +87,9 @@ export function transitionTerminal(
         resumeCommand: "",
       }
     case "ACTIVITY":
+      if (["stopping", "stopped", "failed"].includes(state.status)) {
+        return state
+      }
       return {
         ...state,
         status: "running",
@@ -87,8 +97,14 @@ export function transitionTerminal(
         resumeCommand: event.resumeCommand ?? state.resumeCommand,
       }
     case "STOP":
+      if (["stopping", "stopped", "failed"].includes(state.status)) {
+        return state
+      }
       return { ...state, status: "stopping" }
     case "EXITED":
+      if (state.status === "stopped" || state.status === "failed") {
+        return state
+      }
       return { ...state, status: "stopped", processId: null }
     case "FAILED":
       return {
